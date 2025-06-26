@@ -822,28 +822,49 @@ export const reviews = {
 
 // Funcții pentru admin
 export const admin = {
-  // Verifică dacă utilizatorul curent este admin
+  // Verifică dacă utilizatorul curent este admin - VERSIUNE REPARATĂ
   isAdmin: async () => {
     try {
+      console.log('🔍 Checking admin status...')
+      
       const { data: { user } } = await supabase.auth.getUser()
       
-      if (!user) return false
-      
-      // Verificăm în baza de date dacă utilizatorul este admin
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('user_id', user.id)
-        .single()
-      
-      if (error || !profile) {
-        // Verificăm și după email ca fallback
-        return user.email === 'admin@nexar.ro'
+      if (!user) {
+        console.log('❌ No authenticated user')
+        return false
       }
       
-      return profile.is_admin || user.email === 'admin@nexar.ro'
+      console.log('👤 Checking admin status for user:', user.email)
+      
+      // VERIFICARE SIMPLĂ: Dacă email-ul este admin@nexar.ro, este admin
+      if (user.email === 'admin@nexar.ro') {
+        console.log('✅ User is admin based on email')
+        return true
+      }
+      
+      // Încercăm să verificăm în baza de date, dar cu try/catch pentru a nu bloca
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (!error && profile) {
+          console.log('✅ Profile found, is_admin:', profile.is_admin)
+          return profile.is_admin || false
+        } else {
+          console.log('⚠️ Profile not found or error:', error)
+          // Fallback la verificarea email-ului
+          return user.email === 'admin@nexar.ro'
+        }
+      } catch (profileError) {
+        console.error('⚠️ Error checking profile, using email fallback:', profileError)
+        // Fallback la verificarea email-ului
+        return user.email === 'admin@nexar.ro'
+      }
     } catch (err) {
-      console.error('Error checking admin status:', err)
+      console.error('💥 Error checking admin status:', err)
       return false
     }
   },
