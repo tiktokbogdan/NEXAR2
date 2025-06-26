@@ -67,7 +67,19 @@ const AdminPage = () => {
       setIsLoadingData(true);
       
       if (activeTab === 'listings' || activeTab === 'dashboard') {
-        const { data: listingsData, error: listingsError } = await admin.getAllListings();
+        // Încărcăm TOATE anunțurile pentru admin (inclusiv inactive)
+        const { data: listingsData, error: listingsError } = await supabase
+          .from('listings')
+          .select(`
+            *,
+            profiles!listings_seller_id_fkey (
+              name,
+              email,
+              seller_type,
+              verified
+            )
+          `)
+          .order('created_at', { ascending: false });
         
         if (listingsError) {
           console.error('Error loading listings:', listingsError);
@@ -97,33 +109,46 @@ const AdminPage = () => {
       if (action === 'delete') {
         if (!confirm('Ești sigur că vrei să ștergi acest anunț?')) return;
         
-        const { error } = await admin.deleteListing(id);
+        console.log('🗑️ Deleting listing:', id);
+        
+        const { error } = await supabase
+          .from('listings')
+          .delete()
+          .eq('id', id);
         
         if (error) {
           console.error('Error deleting listing:', error);
-          alert('Eroare la ștergerea anunțului');
+          alert(`Eroare la ștergerea anunțului: ${error.message}`);
           return;
         }
         
+        console.log('✅ Listing deleted successfully');
         alert('Anunțul a fost șters cu succes!');
       } else {
         const status = action === 'approve' ? 'active' : 'rejected';
-        const { error } = await admin.updateListingStatus(id, status);
+        
+        console.log('📝 Updating listing status:', id, 'to', status);
+        
+        const { error } = await supabase
+          .from('listings')
+          .update({ status })
+          .eq('id', id);
         
         if (error) {
           console.error('Error updating listing status:', error);
-          alert('Eroare la actualizarea statusului');
+          alert(`Eroare la actualizarea statusului: ${error.message}`);
           return;
         }
         
+        console.log('✅ Listing status updated successfully');
         alert(`Anunțul a fost ${action === 'approve' ? 'aprobat' : 'respins'} cu succes!`);
       }
       
-      // Reîncărcăm datele
+      // Reîncărcăm datele pentru a reflecta modificările
       await loadAdminData();
     } catch (error) {
       console.error('Error handling listing action:', error);
-      alert('A apărut o eroare');
+      alert('A apărut o eroare neașteptată');
     }
   };
 
@@ -133,17 +158,36 @@ const AdminPage = () => {
       return;
     }
     
-    if (!confirm(`Ești sigur că vrei să ${action === 'approve' ? 'aprobi' : action === 'reject' ? 'respingi' : 'ștergi'} ${selectedListings.length} anunțuri?`)) {
+    const actionText = action === 'approve' ? 'aprobi' : action === 'reject' ? 'respingi' : 'ștergi';
+    
+    if (!confirm(`Ești sigur că vrei să ${actionText} ${selectedListings.length} anunțuri?`)) {
       return;
     }
     
     try {
+      console.log(`🔄 Bulk ${action} for ${selectedListings.length} listings`);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
       for (const listingId of selectedListings) {
-        await handleListingAction(listingId, action);
+        try {
+          await handleListingAction(listingId, action);
+          successCount++;
+        } catch (error) {
+          console.error(`Error with listing ${listingId}:`, error);
+          errorCount++;
+        }
       }
       
       setSelectedListings([]);
-      alert(`${selectedListings.length} anunțuri au fost procesate cu succes!`);
+      
+      if (errorCount === 0) {
+        alert(`${successCount} anunțuri au fost procesate cu succes!`);
+      } else {
+        alert(`${successCount} anunțuri procesate cu succes, ${errorCount} erori.`);
+      }
+      
     } catch (error) {
       console.error('Error with bulk action:', error);
       alert('A apărut o eroare la procesarea anunțurilor');
@@ -267,18 +311,6 @@ const AdminPage = () => {
                       {stats.pendingListings}
                     </span>
                   )}
-                </button>
-                
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-colors ${
-                    activeTab === 'users'
-                      ? 'bg-nexar-primary text-white'
-                      : 'text-gray-700 hover:bg-nexar-light'
-                  }`}
-                >
-                  <Users className="h-5 w-5" />
-                  <span>Utilizatori</span>
                 </button>
               </nav>
             </div>
@@ -559,91 +591,6 @@ const AdminPage = () => {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Users Tab */}
-            {activeTab === 'users' && (
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold text-nexar-primary">Gestionare Utilizatori</h3>
-                  <button
-                    onClick={() => loadAdminData()}
-                    disabled={isLoadingData}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-                    <span>Reîncarcă</span>
-                  </button>
-                </div>
-                
-                {isLoadingData ? (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 border-4 border-nexar-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Se încarcă utilizatorii...</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Utilizator</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Tip</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Membru din</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allUsers.map((user) => (
-                          <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-nexar-primary rounded-full flex items-center justify-center text-white font-semibold">
-                                  {user.name.charAt(0)}
-                                </div>
-                                <div>
-                                  <div className="font-semibold text-nexar-primary">{user.name}</div>
-                                  {user.verified && (
-                                    <div className="text-xs text-green-600">Verificat</div>
-                                  )}
-                                  {user.is_admin && (
-                                    <div className="text-xs text-nexar-accent font-bold">ADMIN</div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-700">{user.email}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                user.seller_type === 'dealer' 
-                                  ? 'bg-emerald-100 text-emerald-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {user.seller_type === 'dealer' ? 'Dealer' : 'Individual'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-gray-700">
-                              {new Date(user.created_at).toLocaleDateString('ro-RO')}
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                Activ
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    
-                    {allUsers.length === 0 && (
-                      <div className="text-center py-8">
-                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600">Nu s-au găsit utilizatori</p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
