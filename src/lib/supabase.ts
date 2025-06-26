@@ -95,7 +95,8 @@ const ensureProfileExists = async (user: any, userData?: any) => {
       seller_type: userData?.sellerType || user.user_metadata?.sellerType || 'individual',
       verified: false,
       rating: 0,
-      reviews_count: 0
+      reviews_count: 0,
+      is_admin: user.email === 'admin@nexar.ro'
     }
     
     console.log('📝 Creating profile with data:', profileData)
@@ -183,6 +184,7 @@ export const auth = {
               name: profile.name,
               email: profile.email,
               sellerType: profile.seller_type,
+              isAdmin: profile.is_admin || data.user.email === 'admin@nexar.ro',
               isLoggedIn: true
             }
             
@@ -197,6 +199,7 @@ export const auth = {
             name: data.user.email?.split('@')[0] || 'Utilizator',
             email: data.user.email,
             sellerType: 'individual',
+            isAdmin: data.user.email === 'admin@nexar.ro',
             isLoggedIn: true
           }
           localStorage.setItem('user', JSON.stringify(userData))
@@ -289,6 +292,29 @@ export const listings = {
       return { data, error: null }
     } catch (err) {
       console.error('💥 Error in listings.getAll:', err)
+      return { data: null, error: err }
+    }
+  },
+
+  // Funcție specială pentru admin să vadă toate anunțurile
+  getAllForAdmin: async () => {
+    try {
+      console.log('🔍 Fetching ALL listings for admin...')
+      
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('❌ Error fetching admin listings:', error)
+        return { data: null, error }
+      }
+      
+      console.log(`✅ Successfully fetched ${data?.length || 0} listings for admin`)
+      return { data, error: null }
+    } catch (err) {
+      console.error('💥 Error in listings.getAllForAdmin:', err)
       return { data: null, error: err }
     }
   },
@@ -794,6 +820,120 @@ export const reviews = {
   }
 }
 
+// Funcții pentru admin
+export const admin = {
+  // Verifică dacă utilizatorul curent este admin
+  isAdmin: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) return false
+      
+      // Verificăm în baza de date dacă utilizatorul este admin
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (error || !profile) {
+        // Verificăm și după email ca fallback
+        return user.email === 'admin@nexar.ro'
+      }
+      
+      return profile.is_admin || user.email === 'admin@nexar.ro'
+    } catch (err) {
+      console.error('Error checking admin status:', err)
+      return false
+    }
+  },
+
+  // Obține toate anunțurile pentru admin (inclusiv inactive)
+  getAllListings: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select(`
+          *,
+          profiles!listings_seller_id_fkey (
+            name,
+            email,
+            seller_type,
+            verified
+          )
+        `)
+        .order('created_at', { ascending: false })
+      
+      return { data, error }
+    } catch (err) {
+      console.error('Error fetching admin listings:', err)
+      return { data: null, error: err }
+    }
+  },
+
+  // Actualizează statusul unui anunț
+  updateListingStatus: async (listingId: string, status: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .update({ status })
+        .eq('id', listingId)
+        .select()
+      
+      return { data, error }
+    } catch (err) {
+      console.error('Error updating listing status:', err)
+      return { data: null, error: err }
+    }
+  },
+
+  // Șterge un anunț (admin)
+  deleteListing: async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listingId)
+      
+      return { error }
+    } catch (err) {
+      console.error('Error deleting listing:', err)
+      return { error: err }
+    }
+  },
+
+  // Obține toți utilizatorii
+  getAllUsers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      return { data, error }
+    } catch (err) {
+      console.error('Error fetching users:', err)
+      return { data: null, error: err }
+    }
+  },
+
+  // Suspendă/activează un utilizator
+  toggleUserStatus: async (userId: string, suspended: boolean) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ suspended })
+        .eq('user_id', userId)
+        .select()
+      
+      return { data, error }
+    } catch (err) {
+      console.error('Error toggling user status:', err)
+      return { data: null, error: err }
+    }
+  }
+}
+
 // Funcție pentru a verifica dacă utilizatorul este autentificat
 export const isAuthenticated = async () => {
   try {
@@ -903,7 +1043,8 @@ export const createMissingProfile = async (userId: string, email: string) => {
       seller_type: 'individual',
       verified: false,
       rating: 0,
-      reviews_count: 0
+      reviews_count: 0,
+      is_admin: email === 'admin@nexar.ro'
     }
     
     const { data, error } = await supabase
@@ -956,6 +1097,7 @@ export const fixCurrentUserProfile = async () => {
         name: existingProfile.name,
         email: existingProfile.email,
         sellerType: existingProfile.seller_type,
+        isAdmin: existingProfile.is_admin || user.email === 'admin@nexar.ro',
         isLoggedIn: true
       }
       
@@ -979,6 +1121,7 @@ export const fixCurrentUserProfile = async () => {
       name: result.data!.name,
       email: result.data!.email,
       sellerType: result.data!.seller_type,
+      isAdmin: result.data!.is_admin || user.email === 'admin@nexar.ro',
       isLoggedIn: true
     }
     
