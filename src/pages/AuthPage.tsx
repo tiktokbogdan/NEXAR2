@@ -48,10 +48,36 @@ const AuthPage = () => {
     return '';
   };
 
+  // VALIDARE EMAIL REPARATĂ - acceptă toate email-urile valide
   const validateEmail = (email: string): string => {
     if (!email.trim()) return 'Email-ul este obligatoriu';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return 'Email-ul nu este valid';
+    
+    // Regex mai permisiv pentru email-uri valide
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailRegex.test(email.trim())) {
+      return 'Email-ul nu este valid';
+    }
+    
+    // Verificări suplimentare pentru email-uri comune
+    const emailLower = email.trim().toLowerCase();
+    
+    // Verifică că nu începe sau se termină cu punct
+    if (emailLower.startsWith('.') || emailLower.endsWith('.')) {
+      return 'Email-ul nu poate începe sau se termina cu punct';
+    }
+    
+    // Verifică că nu are puncte consecutive
+    if (emailLower.includes('..')) {
+      return 'Email-ul nu poate conține puncte consecutive';
+    }
+    
+    // Verifică că domeniul nu este gol
+    const parts = emailLower.split('@');
+    if (parts.length !== 2 || parts[0].length === 0 || parts[1].length === 0) {
+      return 'Email-ul nu este valid';
+    }
+    
     return '';
   };
 
@@ -148,25 +174,7 @@ const AuthPage = () => {
       const emailError = validateEmail(formData.email);
       if (emailError) errors.email = emailError;
       
-      // Verificăm dacă email-ul există deja în auth.users
-      if (!emailError) {
-        setIsValidating(true);
-        try {
-          // Încercăm să facem sign up cu un email temporar pentru a verifica dacă există
-          const { error: checkError } = await supabase.auth.signUp({
-            email: formData.email.trim(),
-            password: 'temp_password_for_check_123',
-            options: { data: { check_only: true } }
-          });
-          
-          if (checkError && checkError.message.includes('already registered')) {
-            errors.email = 'Acest email este deja înregistrat';
-          }
-        } catch (err) {
-          // Ignorăm erorile de verificare
-        }
-        setIsValidating(false);
-      }
+      // NU MAI VERIFICĂM DACĂ EMAIL-UL EXISTĂ - lăsăm Supabase să gestioneze asta
       
       const phoneError = validatePhone(formData.phone);
       if (phoneError) errors.phone = phoneError;
@@ -205,9 +213,15 @@ const AuthPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Starting authentication process...');
+    console.log('📧 Email being used:', formData.email.trim());
+    
     // Validăm formularul
     const isValid = await validateForm();
-    if (!isValid) return;
+    if (!isValid) {
+      console.log('❌ Form validation failed:', validationErrors);
+      return;
+    }
     
     setIsLoading(true);
     setError('');
@@ -216,9 +230,11 @@ const AuthPage = () => {
     try {
       if (isLogin) {
         // Login
+        console.log('🔐 Attempting login...');
         const { data, error } = await auth.signIn(formData.email.trim(), formData.password);
         
         if (error) {
+          console.error('❌ Login error:', error);
           if (error.message.includes('Invalid login credentials')) {
             setError('Email sau parolă incorectă');
           } else if (error.message.includes('Email not confirmed')) {
@@ -229,11 +245,12 @@ const AuthPage = () => {
             setError(error.message);
           }
         } else if (data?.user) {
-          console.log('Login successful for:', data.user.email);
+          console.log('✅ Login successful for:', data.user.email);
           // Redirect will happen via auth state change
         }
       } else {
         // Register
+        console.log('📝 Attempting registration...');
         const { data, error } = await auth.signUp(
           formData.email.trim(), 
           formData.password, 
@@ -246,18 +263,23 @@ const AuthPage = () => {
         );
         
         if (error) {
-          if (error.message.includes('already registered')) {
-            setError('Acest email este deja înregistrat');
+          console.error('❌ Registration error:', error);
+          
+          // Gestionăm erorile de înregistrare mai bine
+          if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+            setError('Acest email este deja înregistrat. Încearcă să te conectezi în schimb.');
           } else if (error.message.includes('Password should be at least')) {
             setError('Parola trebuie să aibă cel puțin 6 caractere');
-          } else if (error.message.includes('Unable to validate email')) {
-            setError('Email-ul nu este valid');
-          } else if (error.message.includes('User already registered')) {
-            setError('Acest email este deja înregistrat');
+          } else if (error.message.includes('Unable to validate email') || error.message.includes('invalid')) {
+            setError('Email-ul introdus nu este valid. Te rugăm să verifici formatul.');
+          } else if (error.message.includes('signup_disabled')) {
+            setError('Înregistrarea este temporar dezactivată. Te rugăm să încerci mai târziu.');
           } else {
-            setError(error.message);
+            setError(`Eroare la înregistrare: ${error.message}`);
           }
         } else if (data?.user) {
+          console.log('✅ Registration successful for:', data.user.email);
+          
           if (!data.session) {
             setSuccessMessage('Cont creat cu succes! Verifică-ți email-ul pentru a confirma contul înainte de a te conecta.');
           } else {
@@ -278,8 +300,8 @@ const AuthPage = () => {
         }
       }
     } catch (err: any) {
-      console.error('Authentication error:', err);
-      setError('A apărut o eroare. Te rugăm să încerci din nou.');
+      console.error('💥 Authentication error:', err);
+      setError('A apărut o eroare neașteptată. Te rugăm să încerci din nou.');
     } finally {
       setIsLoading(false);
     }
