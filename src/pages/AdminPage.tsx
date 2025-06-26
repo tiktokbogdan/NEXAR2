@@ -67,6 +67,8 @@ const AdminPage = () => {
       setIsLoadingData(true);
       
       if (activeTab === 'listings' || activeTab === 'dashboard') {
+        console.log('🔄 Loading listings for admin...');
+        
         // Încărcăm TOATE anunțurile pentru admin (inclusiv inactive)
         const { data: listingsData, error: listingsError } = await supabase
           .from('listings')
@@ -82,8 +84,9 @@ const AdminPage = () => {
           .order('created_at', { ascending: false });
         
         if (listingsError) {
-          console.error('Error loading listings:', listingsError);
+          console.error('❌ Error loading listings:', listingsError);
         } else {
+          console.log(`✅ Loaded ${listingsData?.length || 0} listings for admin`);
           setAllListings(listingsData || []);
         }
       }
@@ -106,6 +109,8 @@ const AdminPage = () => {
 
   const handleListingAction = async (id: string, action: 'approve' | 'reject' | 'delete') => {
     try {
+      console.log(`🔄 Admin action: ${action} for listing ${id}`);
+      
       if (action === 'delete') {
         if (!confirm('Ești sigur că vrei să ștergi acest anunț?')) return;
         
@@ -117,7 +122,7 @@ const AdminPage = () => {
           .eq('id', id);
         
         if (error) {
-          console.error('Error deleting listing:', error);
+          console.error('❌ Error deleting listing:', error);
           alert(`Eroare la ștergerea anunțului: ${error.message}`);
           return;
         }
@@ -135,7 +140,7 @@ const AdminPage = () => {
           .eq('id', id);
         
         if (error) {
-          console.error('Error updating listing status:', error);
+          console.error('❌ Error updating listing status:', error);
           alert(`Eroare la actualizarea statusului: ${error.message}`);
           return;
         }
@@ -147,7 +152,7 @@ const AdminPage = () => {
       // Reîncărcăm datele pentru a reflecta modificările
       await loadAdminData();
     } catch (error) {
-      console.error('Error handling listing action:', error);
+      console.error('💥 Error handling listing action:', error);
       alert('A apărut o eroare neașteptată');
     }
   };
@@ -220,6 +225,12 @@ const AdminPage = () => {
       case 'sold': return 'Vândut';
       default: return status;
     }
+  };
+
+  // Funcție pentru a deschide anunțul în același tab
+  const handleViewListing = (listingId: string) => {
+    console.log('👁️ Viewing listing:', listingId);
+    navigate(`/anunt/${listingId}`);
   };
 
   // Filtrare anunțuri
@@ -544,11 +555,11 @@ const AdminPage = () => {
                               <td className="py-3 px-4">
                                 <div className="flex space-x-2">
                                   <button 
-                                    onClick={() => window.open(`/anunt/${listing.id}`, '_blank')}
+                                    onClick={() => handleViewListing(listing.id)}
                                     className="p-1 text-nexar-primary hover:bg-nexar-light rounded"
                                     title="Vezi anunțul"
                                   >
-                                    <ExternalLink className="h-4 w-4" />
+                                    <Eye className="h-4 w-4" />
                                   </button>
                                   {listing.status === 'pending' && (
                                     <>
