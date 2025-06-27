@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, Mail, Phone, MapPin, Edit, Camera, 
-  Star, Heart, Package, Eye, MessageCircle, 
+  Heart, Package, Eye, MessageCircle, 
   ChevronRight, Calendar, Shield, Building, 
   Lock, AlertTriangle, CheckCircle, X, ChevronDown
 } from 'lucide-react';

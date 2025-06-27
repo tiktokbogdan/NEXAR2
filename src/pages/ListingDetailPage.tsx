@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  Star, Heart, Share2, MapPin, Calendar, Gauge, Fuel, 
+  Heart, Share2, MapPin, Calendar, Gauge, Fuel, 
   Settings, Shield, Phone, Mail, 
   ChevronLeft, ChevronRight, Check,
   Car, Zap, Cog, Palette, Award, User, ExternalLink, Building, AlertTriangle

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, Plus, Check, AlertTriangle, Camera } from 'lucide-react';
+import { X, Plus, Check, AlertTriangle, Camera } from 'lucide-react';
 import { listings, isAuthenticated, supabase } from '../lib/supabase';
 import SuccessModal from '../components/SuccessModal';
 

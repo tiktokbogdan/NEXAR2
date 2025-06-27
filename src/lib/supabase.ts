@@ -45,15 +45,32 @@ export interface User {
 
 // Lista orașelor din România
 export const romanianCities = [
-  'București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Constanța', 'Craiova', 'Brașov', 'Galați',
-  'Ploiești', 'Oradea', 'Bacău', 'Pitești', 'Arad', 'Sibiu', 'Târgu Mureș', 'Baia Mare',
-  'Buzău', 'Botoșani', 'Satu Mare', 'Râmnicu Vâlcea', 'Drobeta-Turnu Severin', 'Suceava',
-  'Piatra Neamț', 'Târgu Jiu', 'Tulcea', 'Focșani', 'Bistrița', 'Reșița', 'Alba Iulia',
-  'Deva', 'Hunedoara', 'Slatina', 'Vaslui', 'Călărași', 'Giurgiu', 'Slobozia', 'Zalău',
-  'Turda', 'Mediaș', 'Onești', 'Gheorgheni', 'Pașcani', 'Dej', 'Reghin', 'Roman',
-  'Câmpina', 'Caracal', 'Făgăraș', 'Lugoj', 'Mangalia', 'Moreni', 'Oltenița', 'Petroșani',
-  'Râmnicu Sărat', 'Roșiorii de Vede', 'Săcele', 'Sebeș', 'Sfântu Gheorghe', 'Tecuci',
-  'Toplița', 'Voluntari', 'Pantelimon', 'Popești-Leordeni', 'Chiajna', 'Otopeni',
+  'Abrud', 'Adjud', 'Agnita', 'Aiud', 'Alba Iulia', 'Aleșd', 'Alexandria', 'Amara', 'Anina', 'Arad', 'Ardud', 'Avrig', 'Azuga',
+  'Bacău', 'Baia de Aramă', 'Baia de Arieș', 'Baia Mare', 'Baia Sprie', 'Băicoi', 'Băile Govora', 'Băile Herculane', 'Băile Olănești',
+  'Băile Tușnad', 'Bălan', 'Bălcești', 'Balș', 'Băneasa', 'Baraolt', 'Bârlad', 'Bechet', 'Beclean', 'Beiuș', 'Bistrița', 'Bistrița Bârgăului',
+  'Blaj', 'Bocșa', 'Bolintin-Vale', 'Borșa', 'Botoșani', 'Brad', 'Brăila', 'Breaza', 'Brezoi', 'Broșteni', 'Buhusi', 'Bumbești-Jiu',
+  'Buzău', 'Bușteni', 'Băbeni', 'Bălan', 'Băile Felix', 'Bălți', 'Călan', 'Călărași', 'Câmpeni', 'Câmpia Turzii', 'Câmpina',
+  'Câmpulung Moldovenesc', 'Câmpulung', 'Caracal', 'Caransebeș', 'Carei', 'Cărbunești', 'Cavnic', 'Cehu Silvaniei', 'Cernavodă',
+  'Chișineu-Criș', 'Cisnădie', 'Cluj-Napoca', 'Codlea', 'Comănești', 'Constanța', 'Copșa Mică', 'Corabia', 'Costești', 'Covasna',
+  'Craiova', 'Cristuru Secuiesc', 'Curtea de Argeș', 'Curtici', 'Dăbuleni', 'Darabani', 'Dărmănești', 'Deva', 'Deta', 'Dej',
+  'Dorohoi', 'Drăgănești-Olt', 'Drăgășani', 'Drobeta-Turnu Severin', 'Dumbrăveni', 'Eforie', 'Făgăraș', 'Făget', 'Fălticeni',
+  'Făurei', 'Fetești', 'Filiași', 'Focșani', 'Fundulea', 'Galați', 'Găești', 'Gătaia', 'Geoagiu', 'Gherla', 'Gheorgheni',
+  'Ghimbav', 'Giurgiu', 'Gura Humorului', 'Hârlău', 'Hațeg', 'Huedin', 'Hunedoara', 'Huși', 'Horezu', 'Iași', 'Ineu', 'Isaccea',
+  'Însurăței', 'Întorsura Buzăului', 'Jibou', 'Jimbolia', 'Lehliu-Gară', 'Luduș', 'Lugoj', 'Lupeni', 'Mangalia', 'Marghita',
+  'Medgidia', 'Mediaș', 'Miercurea Ciuc', 'Miercurea Nirajului', 'Mihăilești', 'Mioveni', 'Mizil', 'Moinești', 'Moldova Nouă',
+  'Motru', 'Murfatlar', 'Murgeni', 'Nădlac', 'Năsăud', 'Năvodari', 'Negrești', 'Negrești-Oaș', 'Nehoiu', 'Nucet', 'Ocna Mureș',
+  'Ocna Sibiului', 'Odobești', 'Odorheiu Secuiesc', 'Oltenița', 'Onești', 'Oradea', 'Orăștie', 'Oravița', 'Orșova', 'Otopeni',
+  'Pașcani', 'Pătârlagele', 'Pâncota', 'Pitești', 'Piatra Neamț', 'Piatra-Olt', 'Ploiești', 'Plopeni', 'Podu Iloaiei',
+  'Popești-Leordeni', 'Predeal', 'Pucioasa', 'Răcari', 'Rădăuți', 'Râmnicu Sărat', 'Râmnicu Vâlcea', 'Rășinari', 'Recaș',
+  'Reghin', 'Remetea', 'Reșița', 'Roman', 'Roșiorii de Vede', 'Rovinari', 'Rupea', 'Săcele', 'Săcueni', 'Salonta',
+  'Sângeorgiu de Pădure', 'Sânnicolau Mare', 'Sărmașu', 'Satu Mare', 'Săveni', 'Scornicești', 'Sebeș', 'Sebiș', 'Segarcea',
+  'Sfântu Gheorghe', 'Sibiu', 'Sighetu Marmației', 'Sighișoara', 'Simeria', 'Șimleu Silvaniei', 'Sinaia', 'Slănic',
+  'Slănic Moldova', 'Slatina', 'Slobozia', 'Solca', 'Sovata', 'Spătaru', 'Ștefănești', 'Strehaia', 'Suceava', 'Sulina',
+  'Tălmaciu', 'Târgu Cărbunești', 'Târgu Frumos', 'Târgu Jiu', 'Târgu Lăpuș', 'Târgu Mureș', 'Târgu Neamț', 'Târgu Ocna',
+  'Târgu Secuiesc', 'Târnăveni', 'Târgoviște', 'Tășnad', 'Techirghiol', 'Tecuci', 'Teiuș', 'Timișoara', 'Tismana', 'Titu',
+  'Toplița', 'Tulcea', 'Turda', 'Turnu Măgurele', 'Turnu Roșu', 'Țăndărei', 'Țicleni', 'Țintea', 'Țureni', 'Uricani',
+  'Urlați', 'Urziceni', 'Valea lui Mihai', 'Vălenii de Munte', 'Vaslui', 'Vatra Dornei', 'Vicovu de Sus', 'Victoria',
+  'Videle', 'Viișoara', 'Vulcan', 'Vânju Mare', 'Zalău', 'Zărnești', 'Zimnicea', 'Zlatna',
   'Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Sector 5', 'Sector 6',
   'Bragadiru', 'Buftea', 'Chitila', 'Corbeanca', 'Domnești', 'Măgurele', 'Mogoșoaia',
   'Cernica', 'Glina', 'Jilava', 'Peris', 'Snagov', 'Stefanestii de Jos', 'Tunari',
@@ -61,8 +78,7 @@ export const romanianCities = [
   'Dumbrăvița', 'Ghiroda', 'Giroc', 'Moșnița Nouă', 'Pișchia', 'Remetea Mare',
   'Rediu', 'Miroslava', 'Popricani', 'Tomești', 'Valea Lupului', 'Ciurea',
   'Mamaia', 'Eforie Nord', 'Eforie Sud', 'Neptun', 'Olimp', 'Costinești',
-  'Predeal', 'Sinaia', 'Bușteni', 'Azuga', 'Câmpulung', 'Mioveni',
-  'Drobeta Turnu Severin', 'Băilești', 'Calafat', 'Filiași', 'Motru', 'Segarcea'
+  'Predeal', 'Sinaia', 'Bușteni', 'Azuga', 'Câmpulung', 'Mioveni'
 ];
 
 // Funcție pentru a crea profilul manual dacă nu există
@@ -93,8 +109,6 @@ const ensureProfileExists = async (user: any, userData?: any) => {
       location: userData?.location || user.user_metadata?.location || '',
       seller_type: userData?.sellerType || user.user_metadata?.sellerType || 'individual',
       verified: false,
-      rating: 0,
-      reviews_count: 0,
       is_admin: user.email === 'admin@nexar.ro'
     }
     
@@ -442,7 +456,6 @@ export const listings = {
         status: 'active', // Schimbăm la 'active' pentru a fi vizibil imediat
         views_count: 0,
         favorites_count: 0,
-        rating: 0,
         featured: false
       }
       
@@ -1045,8 +1058,6 @@ export const createMissingProfile = async (userId: string, email: string) => {
       location: '',
       seller_type: 'individual',
       verified: false,
-      rating: 0,
-      reviews_count: 0,
       is_admin: email === 'admin@nexar.ro'
     }
     

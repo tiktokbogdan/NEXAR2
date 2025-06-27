@@ -237,26 +237,9 @@ const AdminPage = () => {
     setShowEditModal(true);
   };
 
-  // Funcție pentru a șterge o imagine din anunț
-  const handleRemoveImage = (imageUrl: string) => {
-    if (!editingListing) return;
-    
-    if (!confirm('Ești sigur că vrei să ștergi această imagine?')) return;
-    
-    setEditingListing({
-      ...editingListing,
-      images: editingListing.images.filter((img: string) => img !== imageUrl)
-    });
-  };
-
   // Funcție pentru filtrarea orașelor
   const handleLocationChange = (value: string) => {
-    if (!editingListing) return;
-    
-    setEditingListing({
-      ...editingListing,
-      location: value
-    });
+    setEditingListing({...editingListing, location: value});
     
     if (value.length > 0) {
       const filtered = romanianCities.filter(city =>
@@ -271,14 +254,21 @@ const AdminPage = () => {
   };
 
   const selectCity = (city: string) => {
+    setEditingListing({...editingListing, location: city});
+    setShowLocationDropdown(false);
+    setFilteredCities([]);
+  };
+
+  // Funcție pentru a șterge o imagine din anunț
+  const handleRemoveImage = (imageUrl: string) => {
     if (!editingListing) return;
+    
+    if (!confirm('Ești sigur că vrei să ștergi această imagine?')) return;
     
     setEditingListing({
       ...editingListing,
-      location: city
+      images: editingListing.images.filter((img: string) => img !== imageUrl)
     });
-    setShowLocationDropdown(false);
-    setFilteredCities([]);
   };
 
   // Funcție pentru a salva modificările anunțului
@@ -903,7 +893,7 @@ const AdminPage = () => {
                         value={editingListing.location}
                         onChange={(e) => handleLocationChange(e.target.value)}
                         onFocus={() => {
-                          if (editingListing.location?.length > 0) {
+                          if (editingListing.location.length > 0) {
                             const filtered = romanianCities.filter(city =>
                               city.toLowerCase().includes(editingListing.location.toLowerCase())
                             ).slice(0, 10);

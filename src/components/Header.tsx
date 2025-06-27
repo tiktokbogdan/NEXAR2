@@ -4,7 +4,7 @@ import {
   User, Plus, Menu, X, Bell, Heart, Wifi, WifiOff, RefreshCw, Database,
   LogOut
 } from 'lucide-react';
-import { auth, checkSupabaseConnection, supabase, fixCurrentUserProfile, admin } from '../lib/supabase';
+import { auth, checkSupabaseConnection, supabase, admin } from '../lib/supabase';
 import { checkAndFixSupabaseConnection } from '../lib/fixSupabase';
 
 const Header = () => {
@@ -69,12 +69,48 @@ const Header = () => {
           localStorage.setItem('user', JSON.stringify(userData));
         } else {
           console.warn('⚠️ Profile not found for authenticated user');
-          setUser({ 
-            id: currentUser.id, 
-            email: currentUser.email, 
-            needsProfileFix: true,
-            isLoggedIn: true 
-          });
+          
+          // Creăm automat profilul lipsă
+          try {
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .insert([{
+                user_id: currentUser.id,
+                name: currentUser.email?.split('@')[0] || 'Utilizator',
+                email: currentUser.email,
+                seller_type: 'individual',
+                is_admin: currentUser.email === 'admin@nexar.ro'
+              }])
+              .select()
+              .single();
+              
+            if (newProfile) {
+              const userData = {
+                id: currentUser.id,
+                name: newProfile.name,
+                email: newProfile.email,
+                sellerType: newProfile.seller_type,
+                isAdmin: newProfile.is_admin || currentUser.email === 'admin@nexar.ro',
+                isLoggedIn: true
+              };
+              
+              setUser(userData);
+              localStorage.setItem('user', JSON.stringify(userData));
+            } else {
+              setUser({ 
+                id: currentUser.id, 
+                email: currentUser.email,
+                isLoggedIn: true 
+              });
+            }
+          } catch (profileCreateError) {
+            console.error('❌ Error creating profile:', profileCreateError);
+            setUser({ 
+              id: currentUser.id, 
+              email: currentUser.email,
+              isLoggedIn: true 
+            });
+          }
         }
       } else {
         console.log('👤 No authenticated user');
@@ -123,13 +159,52 @@ const Header = () => {
             navigate('/');
           }
         } else {
-          // Profile missing - set flag for repair
-          setUser({ 
-            id: session.user.id, 
-            email: session.user.email, 
-            needsProfileFix: true,
-            isLoggedIn: true 
-          });
+          // Creăm automat profilul lipsă
+          try {
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .insert([{
+                user_id: session.user.id,
+                name: session.user.email?.split('@')[0] || 'Utilizator',
+                email: session.user.email,
+                seller_type: 'individual',
+                is_admin: session.user.email === 'admin@nexar.ro'
+              }])
+              .select()
+              .single();
+              
+            if (newProfile) {
+              const userData = {
+                id: session.user.id,
+                name: newProfile.name,
+                email: newProfile.email,
+                sellerType: newProfile.seller_type,
+                isAdmin: newProfile.is_admin || session.user.email === 'admin@nexar.ro',
+                isLoggedIn: true
+              };
+              
+              setUser(userData);
+              localStorage.setItem('user', JSON.stringify(userData));
+              
+              // Redirect to home page after successful login
+              if (location.pathname === '/auth') {
+                navigate('/');
+              }
+            } else {
+              setUser({ 
+                id: session.user.id, 
+                email: session.user.email,
+                isLoggedIn: true 
+              });
+            }
+          } catch (profileCreateError) {
+            console.error('❌ Error creating profile:', profileCreateError);
+            setUser({ 
+              id: session.user.id, 
+              email: session.user.email,
+              isLoggedIn: true 
+            });
+          }
         }
         setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
@@ -144,28 +219,6 @@ const Header = () => {
     return () => {
       subscription.unsubscribe();
     };
-  };
-
-  const handleFixProfile = async () => {
-    setIsFixing(true);
-    try {
-      console.log('🔧 Attempting to fix user profile...');
-      const result = await fixCurrentUserProfile();
-      
-      if (result.success) {
-        console.log('✅ Profile fixed successfully');
-        // Reload the page to refresh the state
-        window.location.reload();
-      } else {
-        console.error('❌ Failed to fix profile:', result.error);
-        alert('Nu s-a putut repara profilul. Te rugăm să încerci din nou sau să te deconectezi și să te conectezi din nou.');
-      }
-    } catch (error) {
-      console.error('💥 Error fixing profile:', error);
-      alert('A apărut o eroare. Te rugăm să încerci din nou.');
-    } finally {
-      setIsFixing(false);
-    }
   };
 
   const handleFixConnection = async () => {
@@ -225,26 +278,6 @@ const Header = () => {
     if (isLoading) {
       return (
         <div className="w-7 h-7 bg-gray-200 rounded-full animate-pulse"></div>
-      );
-    }
-
-    if (user?.needsProfileFix) {
-      return (
-        <button
-          onClick={handleFixProfile}
-          disabled={isFixing}
-          className="flex items-center space-x-2 p-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition-colors"
-          title="Click pentru a repara profilul"
-        >
-          {isFixing ? (
-            <div className="w-5 h-5 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <div className="w-5 h-5 bg-yellow-500 rounded-full animate-pulse"></div>
-          )}
-          <span className="text-xs text-yellow-700 hidden xl:inline">
-            {isFixing ? 'Se repară...' : 'Repară profil'}
-          </span>
-        </button>
       );
     }
 
@@ -358,7 +391,7 @@ const Header = () => {
             <div className="relative">
               {renderUserButton()}
               
-              {isUserMenuOpen && !isLoading && !user?.needsProfileFix && (
+              {isUserMenuOpen && !isLoading && (
                 <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-lg shadow-lg border border-gray-200 py-2 animate-scale-in">
                   {user ? (
                     <>
@@ -455,22 +488,6 @@ const Header = () => {
                   </div>
                 </div>
               )}
-
-              {/* Profile Fix Button on Mobile */}
-              {user?.needsProfileFix && (
-                <button
-                  onClick={handleFixProfile}
-                  disabled={isFixing}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-yellow-100 text-yellow-800 rounded-lg font-medium mb-4"
-                >
-                  {isFixing ? (
-                    <div className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  <span>{isFixing ? 'Se repară profilul...' : 'Repară Profilul'}</span>
-                </button>
-              )}
               
               <Link
                 to="/anunturi"
@@ -492,7 +509,7 @@ const Header = () => {
                 <div className="px-4 py-3 text-gray-700 font-medium border-t border-gray-200 mt-2 pt-4">
                   Se încarcă...
                 </div>
-              ) : user && !user.needsProfileFix ? (
+              ) : user ? (
                 <>
                   <div className="px-4 py-3 text-gray-700 font-medium border-t border-gray-200 mt-2 pt-4">
                     Bună, {user.name || 'Utilizator'}

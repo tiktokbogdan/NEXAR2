@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building, AlertTriangle, CheckCircle, ChevronDown } from 'lucide-react';
 import { auth, supabase, romanianCities } from '../lib/supabase';
 
@@ -702,13 +702,13 @@ const AuthPage = () => {
                 />
                 <span className="text-sm text-gray-600">
                   Sunt de acord cu{' '}
-                  <a href="/termeni" className="text-nexar-accent hover:text-nexar-gold transition-colors">
+                  <Link to="/termeni" className="text-nexar-accent hover:text-nexar-gold transition-colors">
                     Termenii și Condițiile
-                  </a>{' '}
+                  </Link>{' '}
                   și{' '}
-                  <a href="/confidentialitate" className="text-nexar-accent hover:text-nexar-gold transition-colors">
+                  <Link to="/confidentialitate" className="text-nexar-accent hover:text-nexar-gold transition-colors">
                     Politica de Confidențialitate
-                  </a>
+                  </Link>
                 </span>
                 {validationErrors.agreeToTerms && (
                   <p className="text-sm text-red-600 flex items-center">
