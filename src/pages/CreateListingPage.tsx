@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, X, Plus, Check, AlertTriangle, Camera, MapPin } from 'lucide-react';
+import { Upload, X, Plus, Check, AlertTriangle, Camera } from 'lucide-react';
 import { listings, isAuthenticated, supabase } from '../lib/supabase';
 import SuccessModal from '../components/SuccessModal';
 
@@ -14,7 +14,6 @@ const CreateListingPage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdListingId, setCreatedListingId] = useState<string | null>(null);
-  const [coordinates, setCoordinates] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -332,27 +331,6 @@ const CreateListingPage = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const handleSetLocation = () => {
-    // Deschide Google Maps într-o fereastră nouă pentru a selecta locația
-    const city = formData.location || 'Romania';
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city)}`;
-    window.open(mapsUrl, '_blank');
-    
-    // Afișăm un prompt pentru a introduce coordonatele
-    const coords = prompt('După ce ai selectat locația exactă pe Google Maps, copiază coordonatele (ex: 44.4268,26.1025) și lipește-le aici:');
-    
-    if (coords) {
-      // Validăm formatul coordonatelor (lat,lng)
-      const coordsRegex = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
-      if (coordsRegex.test(coords)) {
-        setCoordinates(coords);
-        alert('Locația exactă a fost setată cu succes!');
-      } else {
-        alert('Format invalid. Te rugăm să introduci coordonatele în formatul: latitudine,longitudine (ex: 44.4268,26.1025)');
-      }
-    }
-  };
-
   const handleSubmit = async () => {
     if (!validateStep(4)) return;
     
@@ -374,7 +352,6 @@ const CreateListingPage = () => {
         year: parseInt(formData.year),
         mileage: parseInt(formData.mileage),
         location: formData.location.trim(),
-        coordinates: coordinates, // Adăugăm coordonatele exacte
         category: mapValueForDatabase('category', formData.category),
         brand: formData.brand,
         model: formData.model.trim(),
@@ -805,26 +782,6 @@ const CreateListingPage = () => {
                       </p>
                     )}
                   </div>
-                  
-                  {/* Buton pentru setarea locației exacte */}
-                  {formData.location && (
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={handleSetLocation}
-                        className="flex items-center space-x-2 text-sm text-nexar-accent hover:text-nexar-gold transition-colors"
-                      >
-                        <MapPin className="h-4 w-4" />
-                        <span>{coordinates ? 'Schimbă locația exactă' : 'Setează locația exactă'}</span>
-                      </button>
-                      {coordinates && (
-                        <p className="mt-1 text-xs text-green-600 flex items-center">
-                          <Check className="h-3 w-3 mr-1" />
-                          Locație exactă setată: {coordinates}
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1055,12 +1012,6 @@ const CreateListingPage = () => {
                     <span className="text-green-700 font-medium">Fotografii:</span>
                     <span className="ml-2">{images.length}/5</span>
                   </div>
-                  {coordinates && (
-                    <div>
-                      <span className="text-green-700 font-medium">Locație exactă:</span>
-                      <span className="ml-2">✓ Setată</span>
-                    </div>
-                  )}
                 </div>
               </div>
 

@@ -19,7 +19,6 @@ const ListingDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const [coordinates, setCoordinates] = useState<string | null>(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -65,14 +64,6 @@ const ListingDetailPage = () => {
         console.error('❌ Error loading seller profile:', sellerError);
       }
       
-      // Verificăm dacă există coordonate în anunț
-      if (data.coordinates) {
-        setCoordinates(data.coordinates);
-      } else {
-        // Folosim locația pentru a genera un URL de Google Maps
-        setCoordinates(null);
-      }
-      
       // Formatăm datele pentru afișare
       const formattedListing = {
         id: data.id,
@@ -81,7 +72,6 @@ const ListingDetailPage = () => {
         year: data.year,
         mileage: `${data.mileage.toLocaleString()} km`,
         location: data.location,
-        coordinates: data.coordinates || null,
         images: data.images && data.images.length > 0 
           ? data.images 
           : ["https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg"],
@@ -136,22 +126,16 @@ const ListingDetailPage = () => {
       console.log('🔍 Checking if listing is favorite for user:', user.id);
       
       // Verificăm dacă anunțul este în lista de favorite
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('listing_id', listingId);
+      const { isFavorite, error } = await listings.checkIfFavorite(user.id, listingId);
       
       if (error) {
         console.error('❌ Error checking favorite status:', error);
         return;
       }
       
-      // Verificăm dacă există rezultate
-      const isFav = data && data.length > 0;
-      console.log('✅ Favorite check result:', isFav);
+      console.log('✅ Favorite check result:', isFavorite);
       
-      setIsFavorite(isFav);
+      setIsFavorite(isFavorite);
       
     } catch (err) {
       console.error('Error in checkIfFavorite:', err);
@@ -176,10 +160,7 @@ const ListingDetailPage = () => {
       
       if (isFavorite) {
         // Eliminăm din favorite
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .match({ user_id: user.id, listing_id: id });
+        const { error } = await listings.removeFromFavorites(user.id, id!);
         
         if (error) {
           console.error('❌ Error removing from favorites:', error);
@@ -191,9 +172,7 @@ const ListingDetailPage = () => {
         
       } else {
         // Adăugăm la favorite
-        const { error } = await supabase
-          .from('favorites')
-          .insert([{ user_id: user.id, listing_id: id }]);
+        const { error } = await listings.addToFavorites(user.id, id!);
         
         if (error) {
           console.error('❌ Error adding to favorites:', error);
@@ -272,14 +251,7 @@ const ListingDetailPage = () => {
   const openGoogleMaps = () => {
     if (!listing) return;
     
-    // Dacă avem coordonate exacte, le folosim
-    if (listing.coordinates) {
-      const url = `https://www.google.com/maps?q=${listing.coordinates}`;
-      window.open(url, '_blank');
-      return;
-    }
-    
-    // Altfel, folosim locația (orașul)
+    // Folosim locația (orașul)
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.location + ", Romania")}`;
     window.open(url, '_blank');
   };

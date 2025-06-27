@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Filter, Star, Heart, MapPin, Calendar, Gauge, ChevronLeft, ChevronRight, Settings, Fuel, User, X, SlidersHorizontal, Building } from 'lucide-react';
-import { listings } from '../lib/supabase';
+import { listings, supabase } from '../lib/supabase';
 
 const ListingsPage = () => {
   // On desktop, show filters by default. On mobile, hide them by default
@@ -27,6 +27,8 @@ const ListingsPage = () => {
   const [allListings, setAllListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set());
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState<Record<string, boolean>>({});
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
@@ -44,7 +46,24 @@ const ListingsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadListings();
+    loadUserFavorites();
   }, []);
+
+  // Load user favorites
+  const loadUserFavorites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await listings.getFavorites(user.id);
+      if (error || !data) return;
+      
+      const favoriteIds = new Set(data.map(item => item.listing_id));
+      setUserFavorites(favoriteIds);
+    } catch (err) {
+      console.error('Error loading favorites:', err);
+    }
+  };
 
   // Load real listings from Supabase
   const loadListings = async () => {
@@ -98,6 +117,40 @@ const ListingsPage = () => {
       setError('A apărut o eroare la încărcarea anunțurilor');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Toggle favorite status
+  const toggleFavorite = async (e: React.MouseEvent, listingId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      
+      setIsTogglingFavorite(prev => ({ ...prev, [listingId]: true }));
+      
+      const isFavorite = userFavorites.has(listingId);
+      
+      if (isFavorite) {
+        await listings.removeFromFavorites(user.id, listingId);
+        setUserFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(listingId);
+          return newSet;
+        });
+      } else {
+        await listings.addToFavorites(user.id, listingId);
+        setUserFavorites(prev => new Set([...prev, listingId]));
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    } finally {
+      setIsTogglingFavorite(prev => ({ ...prev, [listingId]: false }));
     }
   };
 
@@ -215,13 +268,14 @@ const ListingsPage = () => {
             </span>
           </div>
           <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+            onClick={(e) => toggleFavorite(e, listing.id)}
             className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
           >
-            <Heart className="h-4 w-4 text-gray-600 hover:text-nexar-accent transition-colors" />
+            {isTogglingFavorite[listing.id] ? (
+              <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Heart className={`h-4 w-4 ${userFavorites.has(listing.id) ? 'text-red-500 fill-current' : 'text-gray-600 hover:text-red-500'} transition-colors`} />
+            )}
           </button>
         </div>
         
