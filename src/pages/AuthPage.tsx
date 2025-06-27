@@ -5,6 +5,7 @@ import { auth, supabase, romanianCities } from '../lib/supabase';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +25,6 @@ const AuthPage = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
-  const [isResetPassword, setIsResetPassword] = useState(false);
 
   useEffect(() => {
     // Verificăm dacă utilizatorul este deja autentificat

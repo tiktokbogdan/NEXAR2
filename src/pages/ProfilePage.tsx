@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, MapPin, Edit, Camera, 
   Star, Heart, Package, Eye, MessageCircle, 
   ChevronRight, Calendar, Shield, Building, 
-  Lock, AlertTriangle, CheckCircle, X
+  Lock, AlertTriangle, CheckCircle, X, ChevronDown
 } from 'lucide-react';
 import { supabase, auth, profiles, romanianCities } from '../lib/supabase';
 
@@ -508,10 +508,6 @@ const ProfilePage = () => {
                         <span>Verificat</span>
                       </div>
                     )}
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                      <span>{profile.rating || '0.0'}</span>
-                    </div>
                   </div>
                   
                   <div className="mt-2">
@@ -591,9 +587,9 @@ const ProfilePage = () => {
                             // Delay pentru a permite click-ul pe opțiuni
                             setTimeout(() => setShowLocationDropdown(false), 200);
                           }}
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
-                          placeholder="București"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent pr-10"
                         />
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                         
                         {/* Dropdown cu orașe */}
                         {showLocationDropdown && filteredCities.length > 0 && (

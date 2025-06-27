@@ -4,9 +4,10 @@ import {
   Users, FileText, TrendingUp, AlertTriangle, 
   Check, X, Eye, Edit, Trash2, Search, Filter,
   BarChart3, PieChart, Activity, DollarSign, Shield,
-  RefreshCw, ExternalLink, Save, Plus, Minus, LogOut
+  RefreshCw, ExternalLink, Save, Plus, Minus, LogOut,
+  ChevronDown
 } from 'lucide-react';
-import { admin, supabase, auth, romanianCities } from '../lib/supabase';
+import { admin, supabase, romanianCities } from '../lib/supabase';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -248,7 +249,7 @@ const AdminPage = () => {
     });
   };
 
-  // Funcție pentru a gestiona schimbarea locației
+  // Funcție pentru filtrarea orașelor
   const handleLocationChange = (value: string) => {
     if (!editingListing) return;
     
@@ -269,7 +270,6 @@ const AdminPage = () => {
     }
   };
 
-  // Funcție pentru a selecta un oraș din dropdown
   const selectCity = (city: string) => {
     if (!editingListing) return;
     
@@ -408,7 +408,7 @@ const AdminPage = () => {
       localStorage.removeItem('user');
       
       // Deconectăm utilizatorul
-      const { error } = await auth.signOut();
+      const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('❌ Error during admin logout:', error);
@@ -443,7 +443,7 @@ const AdminPage = () => {
     <div className="min-h-screen bg-nexar-light py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-nexar-primary mb-4">
               Panou de Administrare
@@ -454,7 +454,7 @@ const AdminPage = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2 self-start"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2"
           >
             <LogOut className="h-4 w-4" />
             <span>Deconectează-te</span>
@@ -593,7 +593,7 @@ const AdminPage = () => {
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
                     <h3 className="text-xl font-semibold text-nexar-primary">Gestionare Anunțuri</h3>
                     
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => loadAdminData()}
                         disabled={isLoadingData}
@@ -604,7 +604,7 @@ const AdminPage = () => {
                       </button>
                       
                       {selectedListings.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex space-x-2">
                           <button
                             onClick={() => handleBulkAction('approve')}
                             className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center space-x-2"
@@ -790,7 +790,7 @@ const AdminPage = () => {
 
       {/* Modal de editare anunț */}
       {showEditModal && editingListing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -903,7 +903,7 @@ const AdminPage = () => {
                         value={editingListing.location}
                         onChange={(e) => handleLocationChange(e.target.value)}
                         onFocus={() => {
-                          if (editingListing.location.length > 0) {
+                          if (editingListing.location?.length > 0) {
                             const filtered = romanianCities.filter(city =>
                               city.toLowerCase().includes(editingListing.location.toLowerCase())
                             ).slice(0, 10);
@@ -915,8 +915,9 @@ const AdminPage = () => {
                           // Delay pentru a permite click-ul pe opțiuni
                           setTimeout(() => setShowLocationDropdown(false), 200);
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent pr-10"
                       />
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       
                       {/* Dropdown cu orașe */}
                       {showLocationDropdown && filteredCities.length > 0 && (

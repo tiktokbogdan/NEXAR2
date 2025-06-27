@@ -75,12 +75,9 @@ const ListingDetailPage = () => {
         images: data.images && data.images.length > 0 
           ? data.images 
           : ["https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg"],
-        rating: data.rating || 4.5,
         seller: {
           id: data.seller_id,
           name: data.seller_name,
-          rating: sellerData?.rating || 4.5,
-          reviews: sellerData?.reviews_count || 0,
           verified: sellerData?.verified || false,
           phone: sellerData?.phone || "0790 454 647",
           email: sellerData?.email || "contact@nexar.ro",
@@ -436,10 +433,6 @@ const ListingDetailPage = () => {
                 </div>
                 <div className="text-left sm:text-right">
                   <div className="text-3xl sm:text-4xl font-bold text-nexar-accent mb-2">{listing.price}</div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="font-semibold">{listing.rating}</span>
-                  </div>
                 </div>
               </div>
 
@@ -571,11 +564,6 @@ const ListingDetailPage = () => {
                     {listing.seller.verified && (
                       <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                     )}
-                  </div>
-                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-600">
-                    <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400 fill-current" />
-                    <span>{listing.seller.rating}</span>
-                    <span>({listing.seller.reviews} recenzii)</span>
                   </div>
                 </div>
               </div>

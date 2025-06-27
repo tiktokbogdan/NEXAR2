@@ -27,7 +27,6 @@ export interface Listing {
   seller_id: string
   seller_name: string
   seller_type: 'individual' | 'dealer'
-  rating: number
   featured: boolean
   created_at: string
   updated_at: string
@@ -788,68 +787,6 @@ export const messages = {
       return { data, error }
     } catch (err) {
       console.error('Error marking message as read:', err)
-      return { data: null, error: err }
-    }
-  }
-}
-
-// Funcții pentru recenzii
-export const reviews = {
-  create: async (reviewerId: string, reviewedId: string, listingId: string, rating: number, comment?: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert([{
-          reviewer_id: reviewerId,
-          reviewed_id: reviewedId,
-          listing_id: listingId,
-          rating,
-          comment,
-          id: uuidv4()
-        }])
-        .select()
-      
-      // Actualizăm rating-ul mediu pentru utilizatorul evaluat
-      if (!error) {
-        // Obținem toate recenziile pentru utilizator
-        const { data: userReviews } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('reviewed_id', reviewedId)
-        
-        if (userReviews) {
-          // Calculăm media
-          const avgRating = userReviews.reduce((sum, review) => sum + review.rating, 0) / userReviews.length
-          
-          // Actualizăm profilul
-          await supabase
-            .from('profiles')
-            .update({ 
-              rating: parseFloat(avgRating.toFixed(2)),
-              reviews_count: userReviews.length
-            })
-            .eq('user_id', reviewedId)
-        }
-      }
-      
-      return { data, error }
-    } catch (err) {
-      console.error('Error creating review:', err)
-      return { data: null, error: err }
-    }
-  },
-  
-  getForUser: async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('reviewed_id', userId)
-        .order('created_at', { ascending: false })
-      
-      return { data, error }
-    } catch (err) {
-      console.error('Error fetching reviews:', err)
       return { data: null, error: err }
     }
   }
