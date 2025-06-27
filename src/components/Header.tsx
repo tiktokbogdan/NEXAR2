@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Plus, Menu, X, Bell, Heart, Wifi, WifiOff, RefreshCw, Database } from 'lucide-react';
+import { 
+  User, Plus, Menu, X, Bell, Heart, Wifi, WifiOff, RefreshCw, Database,
+  LogOut
+} from 'lucide-react';
 import { auth, checkSupabaseConnection, supabase, fixCurrentUserProfile } from '../lib/supabase';
 import { checkAndFixSupabaseConnection } from '../lib/fixSupabase';
 
@@ -177,12 +180,34 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async () => {
-    setIsLoading(true);
-    await auth.signOut();
-    setUser(null);
-    setIsUserMenuOpen(false);
-    setIsLoading(false);
-    navigate('/');
+    try {
+      setIsLoading(true);
+      console.log('🔄 Logging out user...');
+      
+      // Ștergem datele din localStorage ÎNAINTE de a face signOut
+      localStorage.removeItem('user');
+      
+      // Deconectăm utilizatorul
+      const { error } = await auth.signOut();
+      
+      if (error) {
+        console.error('❌ Error during logout:', error);
+        alert(`Eroare la deconectare: ${error.message}`);
+      } else {
+        console.log('✅ User logged out successfully');
+        // Setăm starea utilizatorului la null
+        setUser(null);
+        // Închidem meniul utilizatorului
+        setIsUserMenuOpen(false);
+        // Redirecționăm către pagina principală
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('💥 Unexpected error during logout:', err);
+      alert('A apărut o eroare la deconectare. Te rugăm să încerci din nou.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderUserButton = () => {
@@ -368,10 +393,11 @@ const Header = () => {
                       <hr className="my-2" />
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         disabled={isLoading}
                       >
-                        Deconectează-te
+                        <LogOut className="h-4 w-4" />
+                        <span>Deconectează-te</span>
                       </button>
                     </>
                   ) : (
@@ -509,10 +535,11 @@ const Header = () => {
                       handleLogout();
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
+                    className="flex items-center space-x-2 w-full text-left px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
                     disabled={isLoading}
                   >
-                    Deconectează-te
+                    <LogOut className="h-4 w-4" />
+                    <span>Deconectează-te</span>
                   </button>
                 </>
               ) : (

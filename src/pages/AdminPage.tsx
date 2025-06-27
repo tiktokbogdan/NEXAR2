@@ -4,7 +4,7 @@ import {
   Users, FileText, TrendingUp, AlertTriangle, 
   Check, X, Eye, Edit, Trash2, Search, Filter,
   BarChart3, PieChart, Activity, DollarSign, Shield,
-  RefreshCw, ExternalLink, Save, Plus, Minus
+  RefreshCw, ExternalLink, Save, Plus, Minus, LogOut
 } from 'lucide-react';
 import { admin, supabase } from '../lib/supabase';
 
@@ -131,6 +131,9 @@ const AdminPage = () => {
         
         console.log('✅ Listing deleted successfully');
         alert('Anunțul a fost șters cu succes!');
+        
+        // Actualizăm lista de anunțuri după ștergere
+        setAllListings(prev => prev.filter(listing => listing.id !== id));
       } else {
         const status = action === 'approve' ? 'active' : 'rejected';
         
@@ -149,10 +152,12 @@ const AdminPage = () => {
         
         console.log('✅ Listing status updated successfully');
         alert(`Anunțul a fost ${action === 'approve' ? 'aprobat' : 'respins'} cu succes!`);
+        
+        // Actualizăm lista de anunțuri după modificare
+        setAllListings(prev => prev.map(listing => 
+          listing.id === id ? { ...listing, status } : listing
+        ));
       }
-      
-      // Reîncărcăm datele pentru a reflecta modificările
-      await loadAdminData();
     } catch (error) {
       console.error('💥 Error handling listing action:', error);
       alert('A apărut o eroare neașteptată');
@@ -229,12 +234,30 @@ const AdminPage = () => {
     setShowEditModal(true);
   };
 
+  // Funcție pentru a șterge o imagine din anunț
+  const handleRemoveImage = (imageUrl: string) => {
+    if (!editingListing) return;
+    
+    if (!confirm('Ești sigur că vrei să ștergi această imagine?')) return;
+    
+    setEditingListing({
+      ...editingListing,
+      images: editingListing.images.filter((img: string) => img !== imageUrl)
+    });
+  };
+
   // Funcție pentru a salva modificările anunțului
   const handleSaveListing = async () => {
     if (!editingListing) return;
     
     try {
       console.log('💾 Saving listing changes:', editingListing.id);
+      
+      // Asigurăm-ne că statusul este 'active' sau 'sold' pentru a fi vizibil
+      let status = editingListing.status;
+      if (status !== 'active' && status !== 'sold') {
+        status = 'active'; // Forțăm statusul la active dacă nu este active sau sold
+      }
       
       const { error } = await supabase
         .from('listings')
@@ -253,7 +276,8 @@ const AdminPage = () => {
           transmission: editingListing.transmission,
           condition: editingListing.condition,
           color: editingListing.color,
-          status: editingListing.status,
+          status: status,
+          images: editingListing.images,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingListing.id);
@@ -270,8 +294,29 @@ const AdminPage = () => {
       setShowEditModal(false);
       setEditingListing(null);
       
-      // Reîncărcăm datele
-      await loadAdminData();
+      // Actualizăm lista de anunțuri după modificare
+      setAllListings(prev => prev.map(listing => 
+        listing.id === editingListing.id ? {
+          ...listing,
+          title: editingListing.title,
+          description: editingListing.description,
+          price: parseFloat(editingListing.price),
+          year: parseInt(editingListing.year),
+          mileage: parseInt(editingListing.mileage),
+          location: editingListing.location,
+          category: editingListing.category,
+          brand: editingListing.brand,
+          model: editingListing.model,
+          engine_capacity: parseInt(editingListing.engine_capacity),
+          fuel_type: editingListing.fuel_type,
+          transmission: editingListing.transmission,
+          condition: editingListing.condition,
+          color: editingListing.color,
+          status: status,
+          images: editingListing.images,
+          updated_at: new Date().toISOString()
+        } : listing
+      ));
     } catch (error) {
       console.error('💥 Error saving listing:', error);
       alert('A apărut o eroare la salvarea modificărilor');
@@ -319,6 +364,34 @@ const AdminPage = () => {
     rejectedListings: allListings.filter(l => l.status === 'rejected').length
   };
 
+  // Funcție îmbunătățită pentru deconectare
+  const handleLogout = async () => {
+    try {
+      console.log('🔄 Admin logging out...');
+      
+      // Ștergem datele din localStorage ÎNAINTE de a face signOut
+      localStorage.removeItem('user');
+      
+      // Deconectăm utilizatorul
+      const { error } = await auth.signOut();
+      
+      if (error) {
+        console.error('❌ Error during admin logout:', error);
+        alert(`Eroare la deconectare: ${error.message}`);
+      } else {
+        console.log('✅ Admin logged out successfully');
+        // Redirecționăm către pagina principală
+        window.location.href = '/';
+      }
+    } catch (err) {
+      console.error('💥 Unexpected error during admin logout:', err);
+      alert('A apărut o eroare la deconectare. Te rugăm să încerci din nou.');
+      
+      // Forțăm redirecționarea în caz de eroare
+      window.location.href = '/';
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -345,13 +418,11 @@ const AdminPage = () => {
             </p>
           </div>
           <button
-            onClick={() => {
-              localStorage.removeItem('user');
-              navigate('/');
-            }}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+            onClick={handleLogout}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2"
           >
-            Deconectează-te
+            <LogOut className="h-4 w-4" />
+            <span>Deconectează-te</span>
           </button>
         </div>
 
@@ -894,10 +965,11 @@ const AdminPage = () => {
                       className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
                     >
                       <option value="active">Activ</option>
-                      <option value="pending">În așteptare</option>
-                      <option value="rejected">Respins</option>
                       <option value="sold">Vândut</option>
                     </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Notă: Doar statusurile "Activ" și "Vândut" sunt vizibile pentru utilizatori
+                    </p>
                   </div>
                 </div>
               </div>
@@ -930,9 +1002,32 @@ const AdminPage = () => {
                           target.src = "https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg";
                         }}
                       />
+                      {/* Buton de ștergere imagine */}
+                      <button
+                        onClick={() => handleRemoveImage(image)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Șterge imaginea"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      {index === 0 && (
+                        <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded">
+                          Principal
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+                
+                {/* Avertisment pentru imagini */}
+                {editingListing.images && editingListing.images.length === 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 flex items-center text-sm">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Atenție: Anunțul nu are nicio imagine! Anunțurile fără imagini sunt mai puțin vizibile.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             
