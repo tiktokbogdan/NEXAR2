@@ -141,7 +141,7 @@ const ProfilePage = () => {
       
       // Extragem anunțurile din rezultate
       const favoriteListings = validData.map(item => item.listings);
-      console.log('📋 Extracted listings:', favoriteListings);
+      console.log('📋 Extracted listings:', favoriteListings.length);
       
       setUserFavorites(favoriteListings);
     } catch (err) {
@@ -336,10 +336,43 @@ const ProfilePage = () => {
     }
   };
 
+  const handleEditListing = (listingId: string) => {
+    // Verificăm dacă anunțul aparține utilizatorului curent
+    const listing = userListings.find(l => l.id === listingId);
+    
+    if (!listing) {
+      alert('Anunțul nu a fost găsit');
+      return;
+    }
+    
+    // Verificăm dacă utilizatorul curent este proprietarul anunțului
+    if (listing.seller_id !== profile.id) {
+      alert('Nu poți edita un anunț care nu îți aparține');
+      return;
+    }
+    
+    // Navigăm la pagina de editare
+    navigate(`/editeaza-anunt/${listingId}`);
+  };
+
   const handleDeleteListing = async (listingId: string) => {
     if (!confirm('Ești sigur că vrei să ștergi acest anunț?')) return;
     
     try {
+      // Verificăm dacă anunțul aparține utilizatorului curent
+      const listing = userListings.find(l => l.id === listingId);
+      
+      if (!listing) {
+        alert('Anunțul nu a fost găsit');
+        return;
+      }
+      
+      // Verificăm dacă utilizatorul curent este proprietarul anunțului
+      if (listing.seller_id !== profile.id) {
+        alert('Nu poți șterge un anunț care nu îți aparține');
+        return;
+      }
+      
       const { error } = await supabase
         .from('listings')
         .delete()
@@ -907,7 +940,7 @@ const ProfilePage = () => {
                                     <span>Vezi</span>
                                   </button>
                                   <button
-                                    onClick={() => navigate(`/editeaza-anunt/${listing.id}`)}
+                                    onClick={() => handleEditListing(listing.id)}
                                     className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-medium hover:bg-blue-200 transition-colors flex items-center space-x-1"
                                   >
                                     <Edit className="h-4 w-4" />

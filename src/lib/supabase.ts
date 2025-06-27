@@ -1138,20 +1138,20 @@ export const fixCurrentUserProfile = async () => {
     console.log('🔧 Starting profile repair process...')
     
     // Obținem utilizatorul curent
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
     
-    if (userError || !user) {
+    if (userError || !currentUser) {
       console.error('❌ No authenticated user found:', userError)
       return { success: false, error: 'No authenticated user' }
     }
     
-    console.log('👤 Found authenticated user:', user.email)
+    console.log('👤 Found authenticated user:', currentUser.email)
     
     // Verificăm dacă profilul există
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', currentUser.id)
       .single()
     
     if (existingProfile && !profileError) {
@@ -1159,11 +1159,11 @@ export const fixCurrentUserProfile = async () => {
       
       // Actualizăm localStorage cu datele corecte
       const userData = {
-        id: user.id,
+        id: currentUser.id,
         name: existingProfile.name,
         email: existingProfile.email,
         sellerType: existingProfile.seller_type,
-        isAdmin: existingProfile.is_admin || user.email === 'admin@nexar.ro',
+        isAdmin: existingProfile.is_admin || currentUser.email === 'admin@nexar.ro',
         isLoggedIn: true
       }
       
@@ -1174,7 +1174,7 @@ export const fixCurrentUserProfile = async () => {
     // Profilul nu există, îl creăm
     console.log('❌ Profile not found, creating new profile...')
     
-    const result = await createMissingProfile(user.id, user.email!)
+    const result = await createMissingProfile(currentUser.id, currentUser.email!)
     
     if (result.error) {
       console.error('❌ Failed to create profile:', result.error)
@@ -1183,11 +1183,11 @@ export const fixCurrentUserProfile = async () => {
     
     // Actualizăm localStorage cu datele noi
     const userData = {
-      id: user.id,
+      id: currentUser.id,
       name: result.data!.name,
       email: result.data!.email,
       sellerType: result.data!.seller_type,
-      isAdmin: result.data!.is_admin || user.email === 'admin@nexar.ro',
+      isAdmin: result.data!.is_admin || currentUser.email === 'admin@nexar.ro',
       isLoggedIn: true
     }
     

@@ -6,7 +6,7 @@ import {
   BarChart3, PieChart, Activity, DollarSign, Shield,
   RefreshCw, ExternalLink, Save, Plus, Minus, LogOut
 } from 'lucide-react';
-import { admin, supabase, romanianCities } from '../lib/supabase';
+import { admin, supabase, auth, romanianCities } from '../lib/supabase';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -222,33 +222,6 @@ const AdminPage = () => {
     navigate(`/anunt/${listingId}`);
   };
 
-  // Funcție pentru a filtra orașele când se introduce text în câmpul de locație
-  const handleLocationChange = (value: string) => {
-    if (editingListing) {
-      setEditingListing({...editingListing, location: value});
-    }
-    
-    if (value.length > 0) {
-      const filtered = romanianCities.filter(city =>
-        city.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 10); // Limităm la 10 rezultate
-      setFilteredCities(filtered);
-      setShowLocationDropdown(true);
-    } else {
-      setFilteredCities([]);
-      setShowLocationDropdown(false);
-    }
-  };
-
-  // Funcție pentru a selecta un oraș din dropdown
-  const selectCity = (city: string) => {
-    if (editingListing) {
-      setEditingListing({...editingListing, location: city});
-    }
-    setShowLocationDropdown(false);
-    setFilteredCities([]);
-  };
-
   // Funcție pentru a deschide modalul de editare
   const handleEditListing = (listing: any) => {
     console.log('✏️ Editing listing:', listing.id);
@@ -273,6 +246,39 @@ const AdminPage = () => {
       ...editingListing,
       images: editingListing.images.filter((img: string) => img !== imageUrl)
     });
+  };
+
+  // Funcție pentru a gestiona schimbarea locației
+  const handleLocationChange = (value: string) => {
+    if (!editingListing) return;
+    
+    setEditingListing({
+      ...editingListing,
+      location: value
+    });
+    
+    if (value.length > 0) {
+      const filtered = romanianCities.filter(city =>
+        city.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10); // Limităm la 10 rezultate
+      setFilteredCities(filtered);
+      setShowLocationDropdown(true);
+    } else {
+      setFilteredCities([]);
+      setShowLocationDropdown(false);
+    }
+  };
+
+  // Funcție pentru a selecta un oraș din dropdown
+  const selectCity = (city: string) => {
+    if (!editingListing) return;
+    
+    setEditingListing({
+      ...editingListing,
+      location: city
+    });
+    setShowLocationDropdown(false);
+    setFilteredCities([]);
   };
 
   // Funcție pentru a salva modificările anunțului
@@ -402,7 +408,7 @@ const AdminPage = () => {
       localStorage.removeItem('user');
       
       // Deconectăm utilizatorul
-      const { error } = await supabase.auth.signOut();
+      const { error } = await auth.signOut();
       
       if (error) {
         console.error('❌ Error during admin logout:', error);
@@ -437,7 +443,7 @@ const AdminPage = () => {
     <div className="min-h-screen bg-nexar-light py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-nexar-primary mb-4">
               Panou de Administrare
@@ -448,7 +454,7 @@ const AdminPage = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2 self-start"
           >
             <LogOut className="h-4 w-4" />
             <span>Deconectează-te</span>
@@ -587,7 +593,7 @@ const AdminPage = () => {
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
                     <h3 className="text-xl font-semibold text-nexar-primary">Gestionare Anunțuri</h3>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => loadAdminData()}
                         disabled={isLoadingData}
@@ -598,7 +604,7 @@ const AdminPage = () => {
                       </button>
                       
                       {selectedListings.length > 0 && (
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => handleBulkAction('approve')}
                             className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center space-x-2"
