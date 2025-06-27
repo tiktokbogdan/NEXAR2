@@ -449,7 +449,7 @@ export const listings = {
         seller_name: profile.name,
         seller_type: profile.seller_type,
         images: imageUrls,
-        status: 'pending', // Schimbăm la 'pending' pentru a necesita aprobare
+        status: 'active', // Schimbăm la 'active' pentru a fi vizibil imediat
         views_count: 0,
         favorites_count: 0,
         rating: 0,

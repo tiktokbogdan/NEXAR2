@@ -364,7 +364,7 @@ const CreateListingPage = () => {
         seller_id: userProfile.id,
         seller_name: userProfile.name || 'Utilizator',
         seller_type: userProfile.seller_type,
-        status: 'pending' // Schimbat la 'pending' pentru a necesita aprobare
+        status: 'active' // Anunțul va fi activ imediat
       };
       
       console.log('📝 Mapped listing data:', listingData);
@@ -1011,14 +1011,6 @@ const CreateListingPage = () => {
                     <span className="ml-2">{images.length}/5</span>
                   </div>
                 </div>
-                
-                {/* Adăugăm informație despre statusul anunțului */}
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-yellow-800 flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    <span>Anunțul va fi trimis spre aprobare și va fi vizibil după verificare.</span>
-                  </p>
-                </div>
               </div>
 
               {errors.submit && (
@@ -1066,7 +1058,7 @@ const CreateListingPage = () => {
                   </>
                 ) : (
                   <>
-                    <span>Trimite spre Aprobare</span>
+                    <span>Publică Anunțul</span>
                     <Check className="h-5 w-5" />
                   </>
                 )}
@@ -1083,7 +1075,7 @@ const CreateListingPage = () => {
         onGoHome={handleGoHome}
         onViewListing={handleViewListing}
         title="Felicitări!"
-        message="Anunțul a fost trimis spre aprobare! Va fi vizibil după ce va fi aprobat de către administratori."
+        message="Anunțul a fost publicat cu succes! Acum este vizibil pentru toți utilizatorii platformei."
         showViewButton={true}
       />
     </div>

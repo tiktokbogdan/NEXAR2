@@ -4,7 +4,7 @@ import {
   User, Plus, Menu, X, Bell, Heart, Wifi, WifiOff, RefreshCw, Database,
   LogOut
 } from 'lucide-react';
-import { auth, checkSupabaseConnection, supabase, fixCurrentUserProfile } from '../lib/supabase';
+import { auth, checkSupabaseConnection, supabase, fixCurrentUserProfile, admin } from '../lib/supabase';
 import { checkAndFixSupabaseConnection } from '../lib/fixSupabase';
 
 const Header = () => {
@@ -14,6 +14,7 @@ const Header = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFixing, setIsFixing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,6 +42,10 @@ const Header = () => {
       if (currentUser) {
         console.log('👤 Found authenticated user:', currentUser.email);
         
+        // Verificăm dacă utilizatorul este admin
+        const isAdminUser = await admin.isAdmin();
+        setIsAdmin(isAdminUser);
+        
         // Get user profile from database
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -56,6 +61,7 @@ const Header = () => {
             name: profileData.name,
             email: profileData.email,
             sellerType: profileData.seller_type,
+            isAdmin: profileData.is_admin || currentUser.email === 'admin@nexar.ro',
             isLoggedIn: true
           };
           
@@ -88,6 +94,10 @@ const Header = () => {
       console.log('🔄 Auth state changed:', event, session?.user?.email);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        // Verificăm dacă utilizatorul este admin
+        const isAdminUser = await admin.isAdmin();
+        setIsAdmin(isAdminUser);
+        
         // User signed in - get profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -101,6 +111,7 @@ const Header = () => {
             name: profileData.name,
             email: profileData.email,
             sellerType: profileData.seller_type,
+            isAdmin: profileData.is_admin || session.user.email === 'admin@nexar.ro',
             isLoggedIn: true
           };
           
@@ -124,6 +135,7 @@ const Header = () => {
       } else if (event === 'SIGNED_OUT') {
         // User signed out
         setUser(null);
+        setIsAdmin(false);
         localStorage.removeItem('user');
         setIsLoading(false);
       }
@@ -197,6 +209,7 @@ const Header = () => {
         console.log('✅ User logged out successfully');
         // Setăm starea utilizatorului la null
         setUser(null);
+        setIsAdmin(false);
         // Închidem meniul utilizatorului
         setIsUserMenuOpen(false);
         // Redirecționăm către pagina principală
@@ -375,13 +388,15 @@ const Header = () => {
                         <Bell className="h-4 w-4" />
                         <span>Notificări</span>
                       </Link>
-                      <Link
-                        to="/admin"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Admin Panel
-                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Admin Panel
+                        </Link>
+                      )}
                       <Link
                         to="/fix-supabase"
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
@@ -516,13 +531,15 @@ const Header = () => {
                   >
                     Favorite
                   </Link>
-                  <Link
-                    to="/admin"
-                    className="block px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Panel
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="block px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
                   <Link
                     to="/fix-supabase"
                     className="block px-4 py-3 rounded-lg font-medium text-blue-600 hover:bg-blue-50 transition-colors"
