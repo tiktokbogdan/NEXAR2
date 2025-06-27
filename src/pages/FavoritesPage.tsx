@@ -7,6 +7,7 @@ const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,6 +65,8 @@ const FavoritesPage = () => {
 
   const handleRemoveFavorite = async (listingId: string) => {
     try {
+      setIsTogglingFavorite(listingId);
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return;
@@ -88,6 +91,8 @@ const FavoritesPage = () => {
     } catch (err) {
       console.error('💥 Error removing favorite:', err);
       alert('A apărut o eroare la eliminarea din favorite');
+    } finally {
+      setIsTogglingFavorite(null);
     }
   };
 
@@ -170,9 +175,14 @@ const FavoritesPage = () => {
                         </div>
                         <button
                           onClick={() => handleRemoveFavorite(listing.id)}
+                          disabled={isTogglingFavorite === listing.id}
                           className="absolute top-2 right-2 bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors"
                         >
-                          <Heart className="h-4 w-4 text-red-500 fill-current" />
+                          {isTogglingFavorite === listing.id ? (
+                            <div className="h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Heart className="h-4 w-4 text-red-500 fill-current" />
+                          )}
                         </button>
                       </div>
                       
@@ -201,7 +211,7 @@ const FavoritesPage = () => {
                         
                         <button
                           onClick={() => navigate(`/anunt/${listing.id}`)}
-                          className="bg-nexar-accent text-white px-6 py-2 rounded-lg font-semibold hover:bg-nexar-gold transition-colors flex items-center space-x-2"
+                          className="bg-nexar-accent text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-nexar-gold transition-colors flex items-center space-x-2"
                         >
                           <Eye className="h-4 w-4" />
                           <span>Vezi Anunțul</span>

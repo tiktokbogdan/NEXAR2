@@ -237,9 +237,24 @@ const AdminPage = () => {
     setShowEditModal(true);
   };
 
-  // Funcție pentru filtrarea orașelor
+  // Funcție pentru a șterge o imagine din anunț
+  const handleRemoveImage = (imageUrl: string) => {
+    if (!editingListing) return;
+    
+    if (!confirm('Ești sigur că vrei să ștergi această imagine?')) return;
+    
+    setEditingListing({
+      ...editingListing,
+      images: editingListing.images.filter((img: string) => img !== imageUrl)
+    });
+  };
+
+  // Funcție pentru a gestiona schimbarea locației
   const handleLocationChange = (value: string) => {
-    setEditingListing({...editingListing, location: value});
+    setEditingListing({
+      ...editingListing,
+      location: value
+    });
     
     if (value.length > 0) {
       const filtered = romanianCities.filter(city =>
@@ -253,22 +268,14 @@ const AdminPage = () => {
     }
   };
 
+  // Funcție pentru a selecta un oraș din dropdown
   const selectCity = (city: string) => {
-    setEditingListing({...editingListing, location: city});
-    setShowLocationDropdown(false);
-    setFilteredCities([]);
-  };
-
-  // Funcție pentru a șterge o imagine din anunț
-  const handleRemoveImage = (imageUrl: string) => {
-    if (!editingListing) return;
-    
-    if (!confirm('Ești sigur că vrei să ștergi această imagine?')) return;
-    
     setEditingListing({
       ...editingListing,
-      images: editingListing.images.filter((img: string) => img !== imageUrl)
+      location: city
     });
+    setShowLocationDropdown(false);
+    setFilteredCities([]);
   };
 
   // Funcție pentru a salva modificările anunțului
