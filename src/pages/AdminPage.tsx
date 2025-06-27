@@ -6,7 +6,7 @@ import {
   BarChart3, PieChart, Activity, DollarSign, Shield,
   RefreshCw, ExternalLink, Save, Plus, Minus, LogOut
 } from 'lucide-react';
-import { admin, supabase } from '../lib/supabase';
+import { admin, supabase, romanianCities } from '../lib/supabase';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -20,6 +20,8 @@ const AdminPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingListing, setEditingListing] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -220,6 +222,33 @@ const AdminPage = () => {
     navigate(`/anunt/${listingId}`);
   };
 
+  // Funcție pentru a filtra orașele când se introduce text în câmpul de locație
+  const handleLocationChange = (value: string) => {
+    if (editingListing) {
+      setEditingListing({...editingListing, location: value});
+    }
+    
+    if (value.length > 0) {
+      const filtered = romanianCities.filter(city =>
+        city.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10); // Limităm la 10 rezultate
+      setFilteredCities(filtered);
+      setShowLocationDropdown(true);
+    } else {
+      setFilteredCities([]);
+      setShowLocationDropdown(false);
+    }
+  };
+
+  // Funcție pentru a selecta un oraș din dropdown
+  const selectCity = (city: string) => {
+    if (editingListing) {
+      setEditingListing({...editingListing, location: city});
+    }
+    setShowLocationDropdown(false);
+    setFilteredCities([]);
+  };
+
   // Funcție pentru a deschide modalul de editare
   const handleEditListing = (listing: any) => {
     console.log('✏️ Editing listing:', listing.id);
@@ -373,7 +402,7 @@ const AdminPage = () => {
       localStorage.removeItem('user');
       
       // Deconectăm utilizatorul
-      const { error } = await auth.signOut();
+      const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('❌ Error during admin logout:', error);
@@ -755,7 +784,7 @@ const AdminPage = () => {
 
       {/* Modal de editare anunț */}
       {showEditModal && editingListing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -862,12 +891,43 @@ const AdminPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Locație
                     </label>
-                    <input
-                      type="text"
-                      value={editingListing.location}
-                      onChange={(e) => setEditingListing({...editingListing, location: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={editingListing.location}
+                        onChange={(e) => handleLocationChange(e.target.value)}
+                        onFocus={() => {
+                          if (editingListing.location.length > 0) {
+                            const filtered = romanianCities.filter(city =>
+                              city.toLowerCase().includes(editingListing.location.toLowerCase())
+                            ).slice(0, 10);
+                            setFilteredCities(filtered);
+                            setShowLocationDropdown(true);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Delay pentru a permite click-ul pe opțiuni
+                          setTimeout(() => setShowLocationDropdown(false), 200);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                      />
+                      
+                      {/* Dropdown cu orașe */}
+                      {showLocationDropdown && filteredCities.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {filteredCities.map((city, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => selectCity(city)}
+                              className="w-full text-left px-4 py-2 hover:bg-nexar-accent hover:text-white transition-colors text-sm border-b border-gray-100 last:border-b-0"
+                            >
+                              {city}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

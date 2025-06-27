@@ -457,7 +457,7 @@ const CreateListingPage = () => {
           {/* User Info Display */}
           <div className="mt-4 inline-flex items-center space-x-3 bg-white rounded-lg px-4 py-2 shadow-sm border">
             <div className="w-8 h-8 bg-nexar-accent rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+              {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="text-left">
               <div className="font-semibold text-gray-900">{userProfile.name}</div>

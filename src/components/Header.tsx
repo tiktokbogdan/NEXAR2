@@ -281,7 +281,14 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center group min-w-0">
+          <Link to="/" className="flex items-center group min-w-0" onClick={() => {
+            // Resetează toate filtrele și starea aplicației
+            window.scrollTo(0, 0);
+            // Reîncarcă pagina pentru a reseta toate filtrele
+            if (location.pathname === '/anunturi') {
+              window.location.href = '/anunturi';
+            }
+          }}>
             <img 
               src="/Nexar - logo_black & red.png" 
               alt="Nexar" 

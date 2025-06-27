@@ -27,8 +27,8 @@ const ListingsPage = () => {
   const [allListings, setAllListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userFavorites, setUserFavorites] = useState<Set<string>>(new Set());
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState<Record<string, boolean>>({});
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState<string | null>(null);
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
@@ -46,24 +46,8 @@ const ListingsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadListings();
-    loadUserFavorites();
+    loadFavorites();
   }, []);
-
-  // Load user favorites
-  const loadUserFavorites = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const { data, error } = await listings.getFavorites(user.id);
-      if (error || !data) return;
-      
-      const favoriteIds = new Set(data.map(item => item.listing_id));
-      setUserFavorites(favoriteIds);
-    } catch (err) {
-      console.error('Error loading favorites:', err);
-    }
-  };
 
   // Load real listings from Supabase
   const loadListings = async () => {
@@ -120,37 +104,96 @@ const ListingsPage = () => {
     }
   };
 
-  // Toggle favorite status
+  // Încarcă favoritele utilizatorului
+  const loadFavorites = async () => {
+    try {
+      // Verificăm dacă utilizatorul este autentificat
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Utilizatorul nu este autentificat
+        return;
+      }
+      
+      console.log('🔍 Loading favorites for user:', user.id);
+      
+      // Obținem toate favoritele utilizatorului
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('listing_id')
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('❌ Error loading favorites:', error);
+        return;
+      }
+      
+      // Extragem ID-urile anunțurilor favorite
+      const favoriteIds = data.map(item => item.listing_id);
+      console.log('✅ Loaded favorites:', favoriteIds.length);
+      
+      setFavorites(favoriteIds);
+      
+    } catch (err) {
+      console.error('💥 Error loading favorites:', err);
+    }
+  };
+
+  // Adaugă/elimină anunțul din favorite
   const toggleFavorite = async (e: React.MouseEvent, listingId: string) => {
     e.preventDefault();
     e.stopPropagation();
     
     try {
+      setIsTogglingFavorite(listingId);
+      
+      // Obținem utilizatorul curent
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
+        // Utilizatorul nu este autentificat, redirecționăm la pagina de login
         navigate('/auth');
         return;
       }
       
-      setIsTogglingFavorite(prev => ({ ...prev, [listingId]: true }));
-      
-      const isFavorite = userFavorites.has(listingId);
+      const isFavorite = favorites.includes(listingId);
+      console.log('🔄 Toggling favorite for listing:', listingId, 'Current state:', isFavorite);
       
       if (isFavorite) {
-        await listings.removeFromFavorites(user.id, listingId);
-        setUserFavorites(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(listingId);
-          return newSet;
-        });
+        // Eliminăm din favorite
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .match({ user_id: user.id, listing_id: listingId });
+        
+        if (error) {
+          console.error('❌ Error removing from favorites:', error);
+          throw new Error('Eroare la eliminarea din favorite');
+        }
+        
+        console.log('✅ Removed from favorites successfully');
+        setFavorites(prev => prev.filter(id => id !== listingId));
+        
       } else {
-        await listings.addToFavorites(user.id, listingId);
-        setUserFavorites(prev => new Set([...prev, listingId]));
+        // Adăugăm la favorite
+        const { error } = await supabase
+          .from('favorites')
+          .insert([{ user_id: user.id, listing_id: listingId }]);
+        
+        if (error) {
+          console.error('❌ Error adding to favorites:', error);
+          throw new Error('Eroare la adăugarea în favorite');
+        }
+        
+        console.log('✅ Added to favorites successfully');
+        setFavorites(prev => [...prev, listingId]);
       }
-    } catch (err) {
-      console.error('Error toggling favorite:', err);
+      
+    } catch (err: any) {
+      console.error('💥 Error toggling favorite:', err);
+      alert(err.message || 'Eroare la actualizarea favoritelor');
     } finally {
-      setIsTogglingFavorite(prev => ({ ...prev, [listingId]: false }));
+      setIsTogglingFavorite(null);
     }
   };
 
@@ -269,12 +312,15 @@ const ListingsPage = () => {
           </div>
           <button 
             onClick={(e) => toggleFavorite(e, listing.id)}
+            disabled={isTogglingFavorite === listing.id}
             className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
           >
-            {isTogglingFavorite[listing.id] ? (
+            {isTogglingFavorite === listing.id ? (
               <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <Heart className={`h-4 w-4 ${userFavorites.has(listing.id) ? 'text-red-500 fill-current' : 'text-gray-600 hover:text-red-500'} transition-colors`} />
+              <Heart 
+                className={`h-4 w-4 ${favorites.includes(listing.id) ? 'text-red-500 fill-current' : 'text-gray-600 hover:text-red-500'} transition-colors`} 
+              />
             )}
           </button>
         </div>

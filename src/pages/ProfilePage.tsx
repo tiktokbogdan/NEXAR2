@@ -136,8 +136,11 @@ const ProfilePage = () => {
       
       console.log('✅ Loaded favorites:', data?.length || 0);
       
+      // Filtrăm rezultatele pentru a elimina null-urile
+      const validData = data?.filter(item => item.listings !== null) || [];
+      
       // Extragem anunțurile din rezultate
-      const favoriteListings = data?.map(item => item.listings) || [];
+      const favoriteListings = validData.map(item => item.listings);
       console.log('📋 Extracted listings:', favoriteListings);
       
       setUserFavorites(favoriteListings);

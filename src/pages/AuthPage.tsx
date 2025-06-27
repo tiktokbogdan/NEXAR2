@@ -24,6 +24,7 @@ const AuthPage = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
+  const [isResetPassword, setIsResetPassword] = useState(false);
 
   useEffect(() => {
     // Verificăm dacă utilizatorul este deja autentificat
@@ -160,7 +161,11 @@ const AuthPage = () => {
   const validateForm = async (): Promise<boolean> => {
     const errors: Record<string, string> = {};
 
-    if (isLogin) {
+    if (isResetPassword) {
+      // Validare pentru resetarea parolei
+      const emailError = validateEmail(formData.email);
+      if (emailError) errors.email = emailError;
+    } else if (isLogin) {
       // Validare pentru login
       const emailError = validateEmail(formData.email);
       if (emailError) errors.email = emailError;
@@ -212,6 +217,11 @@ const AuthPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isResetPassword) {
+      await handleResetPassword();
+      return;
+    }
     
     console.log('🚀 Starting authentication process...');
     console.log('📧 Email being used:', formData.email.trim());
@@ -307,7 +317,7 @@ const AuthPage = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
+  const handleResetPassword = async () => {
     const emailError = validateEmail(formData.email);
     if (emailError) {
       setError('Introdu o adresă de email validă pentru a reseta parola');
@@ -364,12 +374,15 @@ const AuthPage = () => {
               </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              {isLogin ? 'Conectează-te' : 'Creează Cont'}
+              {isResetPassword ? 'Resetare Parolă' : (isLogin ? 'Conectează-te' : 'Creează Cont')}
             </h2>
             <p className="text-gray-600 mt-2 text-sm sm:text-base">
-              {isLogin 
-                ? 'Bun venit înapoi! Conectează-te la contul tău.' 
-                : 'Alătură-te comunității și începe să vinzi sau să cumperi motociclete.'
+              {isResetPassword 
+                ? 'Introdu adresa de email pentru a primi un link de resetare a parolei'
+                : (isLogin 
+                  ? 'Bun venit înapoi! Conectează-te la contul tău.' 
+                  : 'Alătură-te comunității și începe să vinzi sau să cumperi motociclete.'
+                )
               }
             </p>
           </div>
@@ -395,42 +408,46 @@ const AuthPage = () => {
           )}
 
           {/* Toggle Buttons */}
-          <div className="flex bg-gray-50 rounded-xl p-1 mb-6 sm:mb-8">
-            <button
-              onClick={() => {
-                setIsLogin(true);
-                setValidationErrors({});
-                setError('');
-                setSuccessMessage('');
-              }}
-              className={`flex-1 py-2.5 sm:py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
-                isLogin 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Conectare
-            </button>
-            <button
-              onClick={() => {
-                setIsLogin(false);
-                setValidationErrors({});
-                setError('');
-                setSuccessMessage('');
-              }}
-              className={`flex-1 py-2.5 sm:py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
-                !isLogin 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Înregistrare
-            </button>
-          </div>
+          {!isResetPassword && (
+            <div className="flex bg-gray-50 rounded-xl p-1 mb-6 sm:mb-8">
+              <button
+                onClick={() => {
+                  setIsLogin(true);
+                  setIsResetPassword(false);
+                  setValidationErrors({});
+                  setError('');
+                  setSuccessMessage('');
+                }}
+                className={`flex-1 py-2.5 sm:py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
+                  isLogin 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Conectare
+              </button>
+              <button
+                onClick={() => {
+                  setIsLogin(false);
+                  setIsResetPassword(false);
+                  setValidationErrors({});
+                  setError('');
+                  setSuccessMessage('');
+                }}
+                className={`flex-1 py-2.5 sm:py-3 px-4 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
+                  !isLogin 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Înregistrare
+              </button>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {!isLogin && (
+            {!isLogin && !isResetPassword && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nume complet *
@@ -444,7 +461,7 @@ const AuthPage = () => {
                       validationErrors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Bogdan Popescu"
-                    required={!isLogin}
+                    required={!isLogin && !isResetPassword}
                   />
                   <User className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
@@ -487,7 +504,7 @@ const AuthPage = () => {
               )}
             </div>
 
-            {!isLogin && (
+            {!isLogin && !isResetPassword && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -502,7 +519,7 @@ const AuthPage = () => {
                         validationErrors.phone ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="0790 45 46 47"
-                      required={!isLogin}
+                      required={!isLogin && !isResetPassword}
                     />
                     <Phone className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
@@ -540,7 +557,7 @@ const AuthPage = () => {
                         validationErrors.location ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Începe să scrii orașul..."
-                      required={!isLogin}
+                      required={!isLogin && !isResetPassword}
                       autoComplete="off"
                     />
                     <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
@@ -579,7 +596,7 @@ const AuthPage = () => {
                       value={formData.sellerType}
                       onChange={(e) => handleInputChange('sellerType', e.target.value)}
                       className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-nexar-accent focus:border-transparent transition-colors appearance-none text-sm sm:text-base"
-                      required={!isLogin}
+                      required={!isLogin && !isResetPassword}
                     >
                       <option value="individual">Vânzător Privat</option>
                       <option value="dealer">Dealer Autorizat</option>
@@ -590,39 +607,41 @@ const AuthPage = () => {
               </>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Parolă *
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-nexar-accent focus:border-transparent transition-colors text-sm sm:text-base ${
-                    validationErrors.password ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="••••••••"
-                  required
-                />
-                <Lock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
-                </button>
+            {!isResetPassword && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Parolă *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-nexar-accent focus:border-transparent transition-colors text-sm sm:text-base ${
+                      validationErrors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <Lock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  </button>
+                </div>
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {validationErrors.password}
+                  </p>
+                )}
               </div>
-              {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  {validationErrors.password}
-                </p>
-              )}
-            </div>
+            )}
 
-            {!isLogin && (
+            {!isLogin && !isResetPassword && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirmă parola *
@@ -636,7 +655,7 @@ const AuthPage = () => {
                       validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
-                    required={!isLogin}
+                    required={!isLogin && !isResetPassword}
                   />
                   <Lock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
@@ -649,7 +668,7 @@ const AuthPage = () => {
               </div>
             )}
 
-            {isLogin && (
+            {isLogin && !isResetPassword && (
               <div className="flex items-center justify-between">
                 <label className="flex items-center">
                   <input
@@ -660,7 +679,11 @@ const AuthPage = () => {
                 </label>
                 <button 
                   type="button"
-                  onClick={handleForgotPassword}
+                  onClick={() => {
+                    setIsResetPassword(true);
+                    setError('');
+                    setSuccessMessage('');
+                  }}
                   className="text-sm text-nexar-accent hover:text-nexar-gold transition-colors"
                 >
                   Ai uitat parola?
@@ -668,14 +691,14 @@ const AuthPage = () => {
               </div>
             )}
 
-            {!isLogin && (
+            {!isLogin && !isResetPassword && (
               <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
                   className="mt-1 rounded border-gray-300 text-nexar-accent focus:ring-nexar-accent"
-                  required={!isLogin}
+                  required={!isLogin && !isResetPassword}
                 />
                 <span className="text-sm text-gray-600">
                   Sunt de acord cu{' '}
@@ -701,26 +724,45 @@ const AuthPage = () => {
               disabled={isLoading || isValidating}
               className="w-full bg-nexar-accent text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-nexar-gold transition-colors transform hover:scale-105 duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
-              {isLoading ? 'Se procesează...' : (isLogin ? 'Conectează-te' : 'Creează Cont')}
+              {isLoading ? 'Se procesează...' : (
+                isResetPassword ? 'Trimite link de resetare' : 
+                (isLogin ? 'Conectează-te' : 'Creează Cont')
+              )}
             </button>
           </form>
 
           {/* Footer */}
           <div className="mt-6 sm:mt-8 text-center">
-            <p className="text-sm text-gray-600">
-              {isLogin ? 'Nu ai cont?' : 'Ai deja cont?'}{' '}
-              <button
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setValidationErrors({});
-                  setError('');
-                  setSuccessMessage('');
-                }}
-                className="text-nexar-accent hover:text-nexar-gold font-semibold transition-colors"
-              >
-                {isLogin ? 'Înregistrează-te aici' : 'Conectează-te aici'}
-              </button>
-            </p>
+            {isResetPassword ? (
+              <p className="text-sm text-gray-600">
+                Ți-ai amintit parola?{' '}
+                <button
+                  onClick={() => {
+                    setIsResetPassword(false);
+                    setError('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-nexar-accent hover:text-nexar-gold font-semibold transition-colors"
+                >
+                  Înapoi la conectare
+                </button>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {isLogin ? 'Nu ai cont?' : 'Ai deja cont?'}{' '}
+                <button
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setValidationErrors({});
+                    setError('');
+                    setSuccessMessage('');
+                  }}
+                  className="text-nexar-accent hover:text-nexar-gold font-semibold transition-colors"
+                >
+                  {isLogin ? 'Înregistrează-te aici' : 'Conectează-te aici'}
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>

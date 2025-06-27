@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Calendar, MapPin, User, Eye, X, AlertTriangle } from 'lucide-react';
-import { listings, supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -29,7 +29,13 @@ const FavoritesPage = () => {
       console.log('🔍 Loading favorites for user:', user.id);
       
       // Încărcăm favoritele utilizatorului direct din tabela favorites
-      const { data, error } = await listings.getFavorites(user.id);
+      const { data, error } = await supabase
+        .from('favorites')
+        .select(`
+          listing_id,
+          listings (*)
+        `)
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('❌ Error loading favorites:', error);
@@ -39,8 +45,13 @@ const FavoritesPage = () => {
       
       console.log('✅ Loaded favorites:', data?.length || 0);
       
-      // Extragem anunțurile din rezultate
-      const favoriteListings = data?.map(item => item.listings) || [];
+      // Filtrăm rezultatele pentru a elimina null-urile
+      const validData = data?.filter(item => item.listings !== null) || [];
+      
+      // Extragem doar anunțurile din rezultate
+      const favoriteListings = validData.map(item => item.listings);
+      console.log('📋 Extracted listings:', favoriteListings.length);
+      
       setFavorites(favoriteListings);
       
     } catch (err) {
@@ -59,7 +70,10 @@ const FavoritesPage = () => {
       
       console.log('🗑️ Removing favorite:', listingId);
       
-      const { error } = await listings.removeFromFavorites(user.id, listingId);
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .match({ user_id: user.id, listing_id: listingId });
       
       if (error) {
         console.error('❌ Error removing favorite:', error);

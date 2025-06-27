@@ -126,16 +126,22 @@ const ListingDetailPage = () => {
       console.log('🔍 Checking if listing is favorite for user:', user.id);
       
       // Verificăm dacă anunțul este în lista de favorite
-      const { isFavorite, error } = await listings.checkIfFavorite(user.id, listingId);
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('listing_id', listingId);
       
       if (error) {
         console.error('❌ Error checking favorite status:', error);
         return;
       }
       
-      console.log('✅ Favorite check result:', isFavorite);
+      // Verificăm dacă există rezultate
+      const isFav = data && data.length > 0;
+      console.log('✅ Favorite check result:', isFav);
       
-      setIsFavorite(isFavorite);
+      setIsFavorite(isFav);
       
     } catch (err) {
       console.error('Error in checkIfFavorite:', err);
@@ -160,7 +166,10 @@ const ListingDetailPage = () => {
       
       if (isFavorite) {
         // Eliminăm din favorite
-        const { error } = await listings.removeFromFavorites(user.id, id!);
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .match({ user_id: user.id, listing_id: id });
         
         if (error) {
           console.error('❌ Error removing from favorites:', error);
@@ -172,7 +181,9 @@ const ListingDetailPage = () => {
         
       } else {
         // Adăugăm la favorite
-        const { error } = await listings.addToFavorites(user.id, id!);
+        const { error } = await supabase
+          .from('favorites')
+          .insert([{ user_id: user.id, listing_id: id }]);
         
         if (error) {
           console.error('❌ Error adding to favorites:', error);
@@ -587,14 +598,6 @@ const ListingDetailPage = () => {
                 >
                   <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Sună Acum</span>
-                </a>
-                
-                <a
-                  href={`mailto:${listing.seller.email}?subject=Interesat de ${listing.title}&body=Bună ziua, sunt interesat de anunțul dumneavoastră "${listing.title}" de pe Nexar.ro. Aș dori mai multe informații. Mulțumesc!`}
-                  className="w-full bg-gray-900 text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-                >
-                  <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Trimite Email</span>
                 </a>
                 
                 <button

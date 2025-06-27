@@ -15,7 +15,6 @@ export interface Listing {
   year: number
   mileage: number
   location: string
-  coordinates?: string // Adăugăm coordonatele pentru locația exactă
   category: string
   brand: string
   model: string
@@ -665,7 +664,7 @@ export const listings = {
       const favoriteListings = validData.map(item => item.listings);
       console.log('📋 Extracted listings:', favoriteListings.length);
       
-      return { data: validData, error: null };
+      return { data: favoriteListings, error: null };
     } catch (err) {
       console.error('💥 Error fetching favorites:', err);
       return { data: null, error: err };
