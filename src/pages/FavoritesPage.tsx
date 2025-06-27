@@ -45,9 +45,12 @@ const FavoritesPage = () => {
       
       console.log('✅ Loaded favorites:', data?.length || 0);
       
-      // Extragem anunțurile din rezultate
-      const favoriteListings = data?.map(item => item.listings).filter(Boolean) || [];
-      console.log('📋 Extracted listings:', favoriteListings);
+      // Filtrăm rezultatele pentru a elimina null-urile
+      const validData = data?.filter(item => item.listings !== null) || [];
+      
+      // Extragem doar anunțurile din rezultate
+      const favoriteListings = validData.map(item => item.listings);
+      console.log('📋 Extracted listings:', favoriteListings.length);
       
       setFavorites(favoriteListings);
       

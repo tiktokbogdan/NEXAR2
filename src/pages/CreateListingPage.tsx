@@ -14,7 +14,6 @@ const CreateListingPage = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdListingId, setCreatedListingId] = useState<string | null>(null);
-  const [showMapModal, setShowMapModal] = useState(false);
   const [coordinates, setCoordinates] = useState<string | null>(null);
   const navigate = useNavigate();
   

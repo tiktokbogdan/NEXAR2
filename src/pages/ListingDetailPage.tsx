@@ -133,15 +133,25 @@ const ListingDetailPage = () => {
         return;
       }
       
+      console.log('🔍 Checking if listing is favorite for user:', user.id);
+      
       // Verificăm dacă anunțul este în lista de favorite
-      const { isFavorite, error } = await listings.checkIfFavorite(user.id, listingId);
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('listing_id', listingId);
       
       if (error) {
-        console.error('Error checking favorite status:', error);
+        console.error('❌ Error checking favorite status:', error);
         return;
       }
       
-      setIsFavorite(isFavorite);
+      // Verificăm dacă există rezultate
+      const isFav = data && data.length > 0;
+      console.log('✅ Favorite check result:', isFav);
+      
+      setIsFavorite(isFav);
       
     } catch (err) {
       console.error('Error in checkIfFavorite:', err);
@@ -162,31 +172,40 @@ const ListingDetailPage = () => {
         return;
       }
       
+      console.log('🔄 Toggling favorite for listing:', id, 'Current state:', isFavorite);
+      
       if (isFavorite) {
         // Eliminăm din favorite
-        const { error } = await listings.removeFromFavorites(user.id, id!);
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .match({ user_id: user.id, listing_id: id });
         
         if (error) {
-          console.error('Error removing from favorites:', error);
+          console.error('❌ Error removing from favorites:', error);
           throw new Error('Eroare la eliminarea din favorite');
         }
         
+        console.log('✅ Removed from favorites successfully');
         setIsFavorite(false);
         
       } else {
         // Adăugăm la favorite
-        const { error } = await listings.addToFavorites(user.id, id!);
+        const { error } = await supabase
+          .from('favorites')
+          .insert([{ user_id: user.id, listing_id: id }]);
         
         if (error) {
-          console.error('Error adding to favorites:', error);
+          console.error('❌ Error adding to favorites:', error);
           throw new Error('Eroare la adăugarea în favorite');
         }
         
+        console.log('✅ Added to favorites successfully');
         setIsFavorite(true);
       }
       
     } catch (err: any) {
-      console.error('Error toggling favorite:', err);
+      console.error('💥 Error toggling favorite:', err);
       alert(err.message || 'Eroare la actualizarea favoritelor');
     } finally {
       setIsTogglingFavorite(false);

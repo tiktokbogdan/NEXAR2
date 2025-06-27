@@ -642,6 +642,7 @@ export const listings = {
     try {
       console.log('🔍 Fetching favorites for user:', userId);
       
+      // Folosim o interogare directă pentru a obține anunțurile favorite
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -655,8 +656,16 @@ export const listings = {
         return { data: null, error };
       }
       
-      console.log('✅ Fetched favorites successfully:', data?.length || 0);
-      return { data, error: null };
+      // Filtrăm rezultatele pentru a elimina null-urile
+      const validData = data?.filter(item => item.listings !== null) || [];
+      
+      console.log('✅ Fetched favorites successfully:', validData.length);
+      
+      // Extragem doar anunțurile din rezultate
+      const favoriteListings = validData.map(item => item.listings);
+      console.log('📋 Extracted listings:', favoriteListings.length);
+      
+      return { data: validData, error: null };
     } catch (err) {
       console.error('💥 Error fetching favorites:', err);
       return { data: null, error: err };
