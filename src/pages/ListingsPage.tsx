@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Filter, Star, Heart, MapPin, Calendar, Gauge, ChevronLeft, ChevronRight, Settings, Fuel, User, X, SlidersHorizontal, Building } from 'lucide-react';
+import { Search, Filter, Star, MapPin, Calendar, Gauge, ChevronLeft, ChevronRight, Settings, Fuel, User, X, SlidersHorizontal, Building } from 'lucide-react';
 import { listings, supabase } from '../lib/supabase';
 
 const ListingsPage = () => {
@@ -27,8 +27,6 @@ const ListingsPage = () => {
   const [allListings, setAllListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState<string | null>(null);
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
@@ -46,7 +44,6 @@ const ListingsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadListings();
-    loadFavorites();
   }, []);
 
   // Load real listings from Supabase
@@ -101,99 +98,6 @@ const ListingsPage = () => {
       setError('A apărut o eroare la încărcarea anunțurilor');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Încarcă favoritele utilizatorului
-  const loadFavorites = async () => {
-    try {
-      // Verificăm dacă utilizatorul este autentificat
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        // Utilizatorul nu este autentificat
-        return;
-      }
-      
-      console.log('🔍 Loading favorites for user:', user.id);
-      
-      // Obținem toate favoritele utilizatorului
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('listing_id')
-        .eq('user_id', user.id);
-      
-      if (error) {
-        console.error('❌ Error loading favorites:', error);
-        return;
-      }
-      
-      // Extragem ID-urile anunțurilor favorite
-      const favoriteIds = data.map(item => item.listing_id);
-      console.log('✅ Loaded favorites:', favoriteIds.length);
-      
-      setFavorites(favoriteIds);
-      
-    } catch (err) {
-      console.error('💥 Error loading favorites:', err);
-    }
-  };
-
-  // Adaugă/elimină anunțul din favorite
-  const toggleFavorite = async (e: React.MouseEvent, listingId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    try {
-      setIsTogglingFavorite(listingId);
-      
-      // Obținem utilizatorul curent
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        // Utilizatorul nu este autentificat, redirecționăm la pagina de login
-        navigate('/auth');
-        return;
-      }
-      
-      const isFavorite = favorites.includes(listingId);
-      console.log('🔄 Toggling favorite for listing:', listingId, 'Current state:', isFavorite);
-      
-      if (isFavorite) {
-        // Eliminăm din favorite
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .match({ user_id: user.id, listing_id: listingId });
-        
-        if (error) {
-          console.error('❌ Error removing from favorites:', error);
-          throw new Error('Eroare la eliminarea din favorite');
-        }
-        
-        console.log('✅ Removed from favorites successfully');
-        setFavorites(prev => prev.filter(id => id !== listingId));
-        
-      } else {
-        // Adăugăm la favorite
-        const { error } = await supabase
-          .from('favorites')
-          .insert([{ user_id: user.id, listing_id: listingId }]);
-        
-        if (error) {
-          console.error('❌ Error adding to favorites:', error);
-          throw new Error('Eroare la adăugarea în favorite');
-        }
-        
-        console.log('✅ Added to favorites successfully');
-        setFavorites(prev => [...prev, listingId]);
-      }
-      
-    } catch (err: any) {
-      console.error('💥 Error toggling favorite:', err);
-      alert(err.message || 'Eroare la actualizarea favoritelor');
-    } finally {
-      setIsTogglingFavorite(null);
     }
   };
 
@@ -310,19 +214,6 @@ const ListingsPage = () => {
               {listing.category}
             </span>
           </div>
-          <button 
-            onClick={(e) => toggleFavorite(e, listing.id)}
-            disabled={isTogglingFavorite === listing.id}
-            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
-          >
-            {isTogglingFavorite === listing.id ? (
-              <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <Heart 
-                className={`h-4 w-4 ${favorites.includes(listing.id) ? 'text-red-500 fill-current' : 'text-gray-600 hover:text-red-500'} transition-colors`} 
-              />
-            )}
-          </button>
         </div>
         
         <div className="flex-1 p-4 sm:p-6">
@@ -742,7 +633,6 @@ const ListingsPage = () => {
                   <option>Preț: Descrescător</option>
                   <option>An: Cel mai nou</option>
                   <option>Kilometraj: Cel mai mic</option>
-                  <option>Rating: Cel mai mare</option>
                 </select>
               </div>
             </div>

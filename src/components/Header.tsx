@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  User, Plus, Menu, X, Bell, Heart, Wifi, WifiOff, RefreshCw, Database,
+  User, Plus, Menu, X, Bell, Wifi, WifiOff, RefreshCw, Database,
   LogOut
 } from 'lucide-react';
 import { auth, checkSupabaseConnection, supabase, admin } from '../lib/supabase';
@@ -403,14 +403,6 @@ const Header = () => {
                         Profilul Meu
                       </Link>
                       <Link
-                        to="/favorite"
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Heart className="h-4 w-4" />
-                        <span>Favorite</span>
-                      </Link>
-                      <Link
                         to="/notificari"
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         onClick={() => setIsUserMenuOpen(false)}
@@ -520,13 +512,6 @@ const Header = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Profilul Meu
-                  </Link>
-                  <Link
-                    to="/favorite"
-                    className="block px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Favorite
                   </Link>
                   {isAdmin && (
                     <Link

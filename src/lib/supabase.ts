@@ -5,7 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 const supabaseUrl = 'https://tidnmzsivsthwwcfdzyo.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpZG5tenNpdnN0aHd3Y2ZkenlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjE5NTgsImV4cCI6MjA2NjI5Nzk1OH0.Sr1gSZ2qtoff7gmulkT8uIzB8eL7gqKUUNVj82OqHog'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    flowType: 'pkce'
+  }
+})
 
 // Tipuri pentru baza de date
 export interface Listing {
@@ -49,7 +56,7 @@ export const romanianCities = [
   'Bacău', 'Baia de Aramă', 'Baia de Arieș', 'Baia Mare', 'Baia Sprie', 'Băicoi', 'Băile Govora', 'Băile Herculane', 'Băile Olănești',
   'Băile Tușnad', 'Bălan', 'Bălcești', 'Balș', 'Băneasa', 'Baraolt', 'Bârlad', 'Bechet', 'Beclean', 'Beiuș', 'Bistrița', 'Bistrița Bârgăului',
   'Blaj', 'Bocșa', 'Bolintin-Vale', 'Borșa', 'Botoșani', 'Brad', 'Brăila', 'Breaza', 'Brezoi', 'Broșteni', 'Buhusi', 'Bumbești-Jiu',
-  'Buzău', 'Bușteni', 'Băbeni', 'Bălan', 'Băile Felix', 'Bălți', 'Călan', 'Călărași', 'Câmpeni', 'Câmpia Turzii', 'Câmpina',
+  'Buzău', 'Bușteni', 'Băbeni', 'Băile Felix', 'Bălți', 'Călan', 'Călărași', 'Câmpeni', 'Câmpia Turzii', 'Câmpina',
   'Câmpulung Moldovenesc', 'Câmpulung', 'Caracal', 'Caransebeș', 'Carei', 'Cărbunești', 'Cavnic', 'Cehu Silvaniei', 'Cernavodă',
   'Chișineu-Criș', 'Cisnădie', 'Cluj-Napoca', 'Codlea', 'Comănești', 'Constanța', 'Copșa Mică', 'Corabia', 'Costești', 'Covasna',
   'Craiova', 'Cristuru Secuiesc', 'Curtea de Argeș', 'Curtici', 'Dăbuleni', 'Darabani', 'Dărmănești', 'Deva', 'Deta', 'Dej',
@@ -173,6 +180,9 @@ export const auth = {
     try {
       console.log('🔐 Starting signin process for:', email)
       
+      // Curățăm orice sesiune existentă înainte de a încerca să ne conectăm
+      await supabase.auth.signOut()
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -229,13 +239,52 @@ export const auth = {
   signOut: async () => {
     console.log('👋 Signing out user...')
     localStorage.removeItem('user')
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    
+    try {
+      const { error } = await supabase.auth.signOut()
+      
+      // Forțăm curățarea completă a sesiunii
+      if (error) {
+        console.error('❌ Error during signOut:', error)
+        // Chiar dacă avem eroare, curățăm local storage-ul
+        localStorage.clear()
+        sessionStorage.clear()
+      }
+      
+      // Reîncărcăm pagina pentru a curăța complet starea
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+      
+      return { error }
+    } catch (err) {
+      console.error('💥 Error in signOut:', err)
+      // Curățăm oricum storage-ul local
+      localStorage.clear()
+      sessionStorage.clear()
+      return { error: err }
+    }
   },
 
   getCurrentUser: async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    return user
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error) {
+        console.error('❌ Error getting current user:', error)
+        // Dacă avem eroare de refresh token, curățăm sesiunea
+        if (error.message.includes('refresh') || error.message.includes('token')) {
+          localStorage.removeItem('user')
+          sessionStorage.clear()
+        }
+        return null
+      }
+      
+      return user
+    } catch (err) {
+      console.error('💥 Error in getCurrentUser:', err)
+      return null
+    }
   },
   
   resetPassword: async (email: string) => {
@@ -577,110 +626,6 @@ export const listings = {
     } catch (err) {
       console.error('Error deleting listing:', err)
       return { error: err }
-    }
-  },
-  
-  addToFavorites: async (userId: string, listingId: string) => {
-    try {
-      console.log('❤️ Adding listing to favorites:', listingId);
-      
-      const { data, error } = await supabase
-        .from('favorites')
-        .insert([{ user_id: userId, listing_id: listingId }])
-        .select()
-      
-      if (error) {
-        console.error('❌ Error adding to favorites:', error);
-        return { data: null, error };
-      }
-      
-      console.log('✅ Added to favorites successfully');
-      return { data, error: null };
-    } catch (err) {
-      console.error('💥 Error adding to favorites:', err);
-      return { data: null, error: err };
-    }
-  },
-  
-  removeFromFavorites: async (userId: string, listingId: string) => {
-    try {
-      console.log('💔 Removing listing from favorites:', listingId);
-      
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .match({ user_id: userId, listing_id: listingId })
-      
-      if (error) {
-        console.error('❌ Error removing from favorites:', error);
-        return { error };
-      }
-      
-      console.log('✅ Removed from favorites successfully');
-      return { error: null };
-    } catch (err) {
-      console.error('💥 Error removing from favorites:', err);
-      return { error: err };
-    }
-  },
-  
-  getFavorites: async (userId: string) => {
-    try {
-      console.log('🔍 Fetching favorites for user:', userId);
-      
-      // Folosim o interogare directă pentru a obține anunțurile favorite
-      const { data, error } = await supabase
-        .from('favorites')
-        .select(`
-          listing_id,
-          listings (*)
-        `)
-        .eq('user_id', userId)
-      
-      if (error) {
-        console.error('❌ Error fetching favorites:', error);
-        return { data: null, error };
-      }
-      
-      // Filtrăm rezultatele pentru a elimina null-urile
-      const validData = data?.filter(item => item.listings !== null) || [];
-      
-      console.log('✅ Fetched favorites successfully:', validData.length);
-      
-      // Extragem doar anunțurile din rezultate
-      const favoriteListings = validData.map(item => item.listings);
-      console.log('📋 Extracted listings:', favoriteListings.length);
-      
-      return { data: favoriteListings, error: null };
-    } catch (err) {
-      console.error('💥 Error fetching favorites:', err);
-      return { data: null, error: err };
-    }
-  },
-
-  checkIfFavorite: async (userId: string, listingId: string) => {
-    try {
-      console.log('🔍 Checking if listing is favorite:', listingId);
-      
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('listing_id', listingId)
-      
-      if (error) {
-        console.error('❌ Error checking if favorite:', error)
-        return { isFavorite: false, error }
-      }
-      
-      // Check if data array has any items (favorite exists)
-      const isFavorite = data && data.length > 0
-      console.log('✅ Favorite check result:', isFavorite);
-      
-      return { isFavorite, error: null }
-    } catch (err) {
-      console.error('💥 Error checking if favorite:', err)
-      return { isFavorite: false, error: err }
     }
   }
 }

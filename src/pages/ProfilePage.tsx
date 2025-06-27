@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, Mail, Phone, MapPin, Edit, Camera, 
-  Heart, Package, Eye, MessageCircle, 
+  Package, Eye, MessageCircle, 
   ChevronRight, Calendar, Shield, Building, 
   Lock, AlertTriangle, CheckCircle, X, ChevronDown
 } from 'lucide-react';
@@ -19,9 +19,7 @@ const ProfilePage = () => {
   const [editedProfile, setEditedProfile] = useState<any>({});
   const [activeTab, setActiveTab] = useState('listings');
   const [userListings, setUserListings] = useState<any[]>([]);
-  const [userFavorites, setUserFavorites] = useState<any[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(false);
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -78,11 +76,6 @@ const ProfilePage = () => {
       // Încărcăm anunțurile utilizatorului
       loadUserListings(profileData.id);
       
-      // Încărcăm favoritele dacă este utilizatorul curent
-      if (isCurrentUser && currentUser) {
-        loadUserFavorites(currentUser.id);
-      }
-      
     } catch (err) {
       console.error('Error loading profile:', err);
       setError('A apărut o eroare la încărcarea profilului');
@@ -111,43 +104,6 @@ const ProfilePage = () => {
       console.error('Error loading user listings:', err);
     } finally {
       setIsLoadingListings(false);
-    }
-  };
-
-  const loadUserFavorites = async (userId: string) => {
-    try {
-      setIsLoadingFavorites(true);
-      
-      console.log('🔍 Loading favorites for user profile:', userId);
-      
-      // Încărcăm favoritele utilizatorului cu join la listings
-      const { data, error } = await supabase
-        .from('favorites')
-        .select(`
-          listing_id,
-          listings (*)
-        `)
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('❌ Error loading favorites:', error);
-        return;
-      }
-      
-      console.log('✅ Loaded favorites:', data?.length || 0);
-      
-      // Filtrăm rezultatele pentru a elimina null-urile
-      const validData = data?.filter(item => item.listings !== null) || [];
-      
-      // Extragem anunțurile din rezultate
-      const favoriteListings = validData.map(item => item.listings);
-      console.log('📋 Extracted listings:', favoriteListings.length);
-      
-      setUserFavorites(favoriteListings);
-    } catch (err) {
-      console.error('💥 Error loading favorites:', err);
-    } finally {
-      setIsLoadingFavorites(false);
     }
   };
 
@@ -391,35 +347,6 @@ const ProfilePage = () => {
     } catch (err) {
       console.error('Error deleting listing:', err);
       alert('A apărut o eroare la ștergerea anunțului');
-    }
-  };
-
-  const handleRemoveFavorite = async (listingId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-      
-      console.log('🗑️ Removing favorite:', listingId);
-      
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .match({ user_id: user.id, listing_id: listingId });
-      
-      if (error) {
-        console.error('❌ Error removing favorite:', error);
-        alert('Eroare la eliminarea din favorite');
-        return;
-      }
-      
-      console.log('✅ Favorite removed successfully');
-      
-      // Actualizăm lista de favorite
-      setUserFavorites(prev => prev.filter(listing => listing.id !== listingId));
-    } catch (err) {
-      console.error('💥 Error removing favorite:', err);
-      alert('A apărut o eroare la eliminarea din favorite');
     }
   };
 
@@ -809,15 +736,10 @@ const ProfilePage = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6 mt-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistici</h2>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="bg-gray-50 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-nexar-accent">{userListings.length}</div>
                   <div className="text-sm text-gray-600">Anunțuri Active</div>
-                </div>
-                
-                <div className="bg-gray-50 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-nexar-accent">{userFavorites.length}</div>
-                  <div className="text-sm text-gray-600">Favorite</div>
                 </div>
               </div>
             </div>
@@ -838,19 +760,6 @@ const ProfilePage = () => {
                 >
                   Anunțurile Mele
                 </button>
-                
-                {isCurrentUser && (
-                  <button
-                    onClick={() => setActiveTab('favorites')}
-                    className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
-                      activeTab === 'favorites'
-                        ? 'text-nexar-accent border-b-2 border-nexar-accent'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Favorite
-                  </button>
-                )}
               </div>
 
               {/* Listings Tab */}
@@ -924,6 +833,7 @@ const ProfilePage = () => {
                                   <Calendar className="h-4 w-4" />
                                   <span>{new Date(listing.created_at).toLocaleDateString('ro-RO')}</span>
                                 </div>
+                              
                               </div>
                               
                               {isCurrentUser && (
@@ -951,99 +861,6 @@ const ProfilePage = () => {
                                   </button>
                                 </div>
                               )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Favorites Tab */}
-              {activeTab === 'favorites' && isCurrentUser && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Anunțurile Favorite</h2>
-                  
-                  {isLoadingFavorites ? (
-                    <div className="text-center py-8">
-                      <div className="w-12 h-12 border-4 border-nexar-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-gray-600">Se încarcă favoritele...</p>
-                    </div>
-                  ) : userFavorites.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-xl">
-                      <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        Nu ai anunțuri favorite
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        Adaugă anunțuri la favorite pentru a le găsi mai ușor
-                      </p>
-                      <button
-                        onClick={() => navigate('/anunturi')}
-                        className="mt-2 bg-nexar-accent text-white px-6 py-2 rounded-lg font-semibold hover:bg-nexar-gold transition-colors"
-                      >
-                        Explorează Anunțuri
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {userFavorites.map(listing => (
-                        <div key={listing.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-                          <div className="flex flex-col sm:flex-row">
-                            <div className="relative w-full sm:w-48 h-40 sm:h-auto">
-                              <img
-                                src={listing.images && listing.images[0] ? listing.images[0] : "https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg"}
-                                alt={listing.title}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute top-2 left-2">
-                                <span className="bg-nexar-accent text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                  {listing.category}
-                                </span>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  handleRemoveFavorite(listing.id);
-                                }}
-                                className="absolute top-2 right-2 bg-white rounded-full p-1.5 hover:bg-gray-100 transition-colors"
-                              >
-                                <Heart className="h-4 w-4 text-red-500 fill-current" />
-                              </button>
-                            </div>
-                            
-                            <div className="flex-1 p-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{listing.title}</h3>
-                                  <div className="text-xl font-bold text-nexar-accent mb-2">€{listing.price.toLocaleString()}</div>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
-                                <div className="flex items-center space-x-1 text-gray-600">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>{listing.year}</span>
-                                </div>
-                                <div className="flex items-center space-x-1 text-gray-600">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{listing.location}</span>
-                                </div>
-                                <div className="flex items-center space-x-1 text-gray-600">
-                                  <User className="h-4 w-4" />
-                                  <span>{listing.seller_name}</span>
-                                </div>
-                              </div>
-                              
-                              <button
-                                onClick={() => navigate(`/anunt/${listing.id}`)}
-                                className="bg-nexar-accent text-white px-6 py-2 rounded-lg font-semibold hover:bg-nexar-gold transition-colors flex items-center space-x-2"
-                              >
-                                <Eye className="h-4 w-4" />
-                                <span>Vezi Anunțul</span>
-                              </button>
                             </div>
                           </div>
                         </div>

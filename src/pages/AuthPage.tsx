@@ -702,11 +702,11 @@ const AuthPage = () => {
                 />
                 <span className="text-sm text-gray-600">
                   Sunt de acord cu{' '}
-                  <Link to="/termeni" className="text-nexar-accent hover:text-nexar-gold transition-colors">
+                  <Link to="/termeni" target="_blank" className="text-nexar-accent hover:text-nexar-gold transition-colors">
                     Termenii și Condițiile
                   </Link>{' '}
                   și{' '}
-                  <Link to="/confidentialitate" className="text-nexar-accent hover:text-nexar-gold transition-colors">
+                  <Link to="/confidentialitate" target="_blank" className="text-nexar-accent hover:text-nexar-gold transition-colors">
                     Politica de Confidențialitate
                   </Link>
                 </span>
