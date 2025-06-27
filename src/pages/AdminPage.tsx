@@ -4,7 +4,7 @@ import {
   Users, FileText, TrendingUp, AlertTriangle, 
   Check, X, Eye, Edit, Trash2, Search, Filter,
   BarChart3, PieChart, Activity, DollarSign, Shield,
-  RefreshCw, ExternalLink
+  RefreshCw, ExternalLink, Save, Plus, Minus
 } from 'lucide-react';
 import { admin, supabase } from '../lib/supabase';
 
@@ -18,6 +18,8 @@ const AdminPage = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [editingListing, setEditingListing] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -207,6 +209,75 @@ const AdminPage = () => {
     );
   };
 
+  // Funcție pentru a deschide anunțul în același tab
+  const handleViewListing = (listingId: string) => {
+    console.log('👁️ Viewing listing:', listingId);
+    navigate(`/anunt/${listingId}`);
+  };
+
+  // Funcție pentru a deschide modalul de editare
+  const handleEditListing = (listing: any) => {
+    console.log('✏️ Editing listing:', listing.id);
+    setEditingListing({
+      ...listing,
+      // Convertim valorile pentru editare
+      price: listing.price.toString(),
+      year: listing.year.toString(),
+      mileage: listing.mileage.toString(),
+      engine_capacity: listing.engine_capacity.toString(),
+    });
+    setShowEditModal(true);
+  };
+
+  // Funcție pentru a salva modificările anunțului
+  const handleSaveListing = async () => {
+    if (!editingListing) return;
+    
+    try {
+      console.log('💾 Saving listing changes:', editingListing.id);
+      
+      const { error } = await supabase
+        .from('listings')
+        .update({
+          title: editingListing.title,
+          description: editingListing.description,
+          price: parseFloat(editingListing.price),
+          year: parseInt(editingListing.year),
+          mileage: parseInt(editingListing.mileage),
+          location: editingListing.location,
+          category: editingListing.category,
+          brand: editingListing.brand,
+          model: editingListing.model,
+          engine_capacity: parseInt(editingListing.engine_capacity),
+          fuel_type: editingListing.fuel_type,
+          transmission: editingListing.transmission,
+          condition: editingListing.condition,
+          color: editingListing.color,
+          status: editingListing.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingListing.id);
+      
+      if (error) {
+        console.error('❌ Error updating listing:', error);
+        alert(`Eroare la actualizarea anunțului: ${error.message}`);
+        return;
+      }
+      
+      console.log('✅ Listing updated successfully');
+      alert('Anunțul a fost actualizat cu succes!');
+      
+      setShowEditModal(false);
+      setEditingListing(null);
+      
+      // Reîncărcăm datele
+      await loadAdminData();
+    } catch (error) {
+      console.error('💥 Error saving listing:', error);
+      alert('A apărut o eroare la salvarea modificărilor');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -225,12 +296,6 @@ const AdminPage = () => {
       case 'sold': return 'Vândut';
       default: return status;
     }
-  };
-
-  // Funcție pentru a deschide anunțul în același tab
-  const handleViewListing = (listingId: string) => {
-    console.log('👁️ Viewing listing:', listingId);
-    navigate(`/anunt/${listingId}`);
   };
 
   // Filtrare anunțuri
@@ -561,6 +626,15 @@ const AdminPage = () => {
                                   >
                                     <Eye className="h-4 w-4" />
                                   </button>
+                                  
+                                  <button
+                                    onClick={() => handleEditListing(listing)}
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Editează"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  
                                   {listing.status === 'pending' && (
                                     <>
                                       <button
@@ -607,6 +681,279 @@ const AdminPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de editare anunț */}
+      {showEditModal && editingListing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Editare Anunț</h2>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Informații de bază */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Informații de bază</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Titlu
+                    </label>
+                    <input
+                      type="text"
+                      value={editingListing.title}
+                      onChange={(e) => setEditingListing({...editingListing, title: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preț (EUR)
+                    </label>
+                    <input
+                      type="number"
+                      value={editingListing.price}
+                      onChange={(e) => setEditingListing({...editingListing, price: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Marcă
+                    </label>
+                    <input
+                      type="text"
+                      value={editingListing.brand}
+                      onChange={(e) => setEditingListing({...editingListing, brand: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Model
+                    </label>
+                    <input
+                      type="text"
+                      value={editingListing.model}
+                      onChange={(e) => setEditingListing({...editingListing, model: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      An fabricație
+                    </label>
+                    <input
+                      type="number"
+                      value={editingListing.year}
+                      onChange={(e) => setEditingListing({...editingListing, year: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kilometraj
+                    </label>
+                    <input
+                      type="number"
+                      value={editingListing.mileage}
+                      onChange={(e) => setEditingListing({...editingListing, mileage: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Capacitate motor (cc)
+                    </label>
+                    <input
+                      type="number"
+                      value={editingListing.engine_capacity}
+                      onChange={(e) => setEditingListing({...editingListing, engine_capacity: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Locație
+                    </label>
+                    <input
+                      type="text"
+                      value={editingListing.location}
+                      onChange={(e) => setEditingListing({...editingListing, location: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Detalii tehnice */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalii tehnice</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categorie
+                    </label>
+                    <select
+                      value={editingListing.category}
+                      onChange={(e) => setEditingListing({...editingListing, category: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    >
+                      <option value="sport">Sport</option>
+                      <option value="touring">Touring</option>
+                      <option value="cruiser">Cruiser</option>
+                      <option value="adventure">Adventure</option>
+                      <option value="naked">Naked</option>
+                      <option value="enduro">Enduro</option>
+                      <option value="scooter">Scooter</option>
+                      <option value="chopper">Chopper</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Combustibil
+                    </label>
+                    <select
+                      value={editingListing.fuel_type}
+                      onChange={(e) => setEditingListing({...editingListing, fuel_type: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    >
+                      <option value="benzina">Benzină</option>
+                      <option value="electric">Electric</option>
+                      <option value="hibrid">Hibrid</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Transmisie
+                    </label>
+                    <select
+                      value={editingListing.transmission}
+                      onChange={(e) => setEditingListing({...editingListing, transmission: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    >
+                      <option value="manuala">Manuală</option>
+                      <option value="automata">Automată</option>
+                      <option value="semi-automata">Semi-automată</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stare
+                    </label>
+                    <select
+                      value={editingListing.condition}
+                      onChange={(e) => setEditingListing({...editingListing, condition: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    >
+                      <option value="noua">Nouă</option>
+                      <option value="excelenta">Excelentă</option>
+                      <option value="foarte_buna">Foarte bună</option>
+                      <option value="buna">Bună</option>
+                      <option value="satisfacatoare">Satisfăcătoare</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Culoare
+                    </label>
+                    <input
+                      type="text"
+                      value={editingListing.color || ''}
+                      onChange={(e) => setEditingListing({...editingListing, color: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={editingListing.status}
+                      onChange={(e) => setEditingListing({...editingListing, status: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                    >
+                      <option value="active">Activ</option>
+                      <option value="pending">În așteptare</option>
+                      <option value="rejected">Respins</option>
+                      <option value="sold">Vândut</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Descriere */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Descriere
+                </label>
+                <textarea
+                  value={editingListing.description || ''}
+                  onChange={(e) => setEditingListing({...editingListing, description: e.target.value})}
+                  rows={6}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent"
+                ></textarea>
+              </div>
+              
+              {/* Imagini */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Imagini</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {editingListing.images && editingListing.images.map((image: string, index: number) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={image}
+                        alt={`Imagine ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.src = "https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg";
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-4">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Anulează
+              </button>
+              <button
+                onClick={handleSaveListing}
+                className="px-6 py-2 bg-nexar-accent text-white rounded-lg font-semibold hover:bg-nexar-gold transition-colors flex items-center space-x-2"
+              >
+                <Save className="h-4 w-4" />
+                <span>Salvează Modificările</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

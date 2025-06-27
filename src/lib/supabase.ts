@@ -303,7 +303,15 @@ export const listings = {
       
       const { data, error } = await supabase
         .from('listings')
-        .select('*')
+        .select(`
+          *,
+          profiles!listings_seller_id_fkey (
+            name,
+            email,
+            seller_type,
+            verified
+          )
+        `)
         .order('created_at', { ascending: false })
       
       if (error) {
@@ -441,7 +449,7 @@ export const listings = {
         seller_name: profile.name,
         seller_type: profile.seller_type,
         images: imageUrls,
-        status: 'active',
+        status: 'pending', // Schimbăm la 'pending' pentru a necesita aprobare
         views_count: 0,
         favorites_count: 0,
         rating: 0,
@@ -844,17 +852,17 @@ export const admin = {
       
       // Încercăm să verificăm în baza de date, dar cu try/catch pentru a nu bloca
       try {
-        const { data: profile, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('user_id', user.id)
           .single()
         
-        if (!error && profile) {
+        if (!profileError && profile) {
           console.log('✅ Profile found, is_admin:', profile.is_admin)
           return profile.is_admin || false
         } else {
-          console.log('⚠️ Profile not found or error:', error)
+          console.log('⚠️ Profile not found or error:', profileError)
           // Fallback la verificarea email-ului
           return user.email === 'admin@nexar.ro'
         }
@@ -872,6 +880,8 @@ export const admin = {
   // Obține toate anunțurile pentru admin (inclusiv inactive)
   getAllListings: async () => {
     try {
+      console.log('🔍 Fetching ALL listings for admin...')
+      
       const { data, error } = await supabase
         .from('listings')
         .select(`
@@ -885,9 +895,15 @@ export const admin = {
         `)
         .order('created_at', { ascending: false })
       
-      return { data, error }
+      if (error) {
+        console.error('❌ Error fetching admin listings:', error)
+        return { data: null, error }
+      }
+      
+      console.log(`✅ Successfully fetched ${data?.length || 0} listings for admin`)
+      return { data, error: null }
     } catch (err) {
-      console.error('Error fetching admin listings:', err)
+      console.error('💥 Error in admin.getAllListings:', err)
       return { data: null, error: err }
     }
   },
@@ -895,15 +911,23 @@ export const admin = {
   // Actualizează statusul unui anunț
   updateListingStatus: async (listingId: string, status: string) => {
     try {
+      console.log('📝 Updating listing status:', listingId, 'to', status)
+      
       const { data, error } = await supabase
         .from('listings')
         .update({ status })
         .eq('id', listingId)
         .select()
       
-      return { data, error }
+      if (error) {
+        console.error('❌ Error updating listing status:', error)
+        return { data: null, error }
+      }
+      
+      console.log('✅ Listing status updated successfully')
+      return { data, error: null }
     } catch (err) {
-      console.error('Error updating listing status:', err)
+      console.error('💥 Error in updateListingStatus:', err)
       return { data: null, error: err }
     }
   },
@@ -911,14 +935,22 @@ export const admin = {
   // Șterge un anunț (admin)
   deleteListing: async (listingId: string) => {
     try {
+      console.log('🗑️ Deleting listing:', listingId)
+      
       const { error } = await supabase
         .from('listings')
         .delete()
         .eq('id', listingId)
       
-      return { error }
+      if (error) {
+        console.error('❌ Error deleting listing:', error)
+        return { error }
+      }
+      
+      console.log('✅ Listing deleted successfully')
+      return { error: null }
     } catch (err) {
-      console.error('Error deleting listing:', err)
+      console.error('💥 Error in deleteListing:', err)
       return { error: err }
     }
   },
