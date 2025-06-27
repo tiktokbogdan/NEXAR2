@@ -226,14 +226,30 @@ export const auth = {
   },
   
   resetPassword: async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    })
-    return { data, error }
+    console.log('🔑 Sending password reset email to:', email)
+    
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+      
+      if (error) {
+        console.error('❌ Error sending password reset email:', error)
+        return { data: null, error }
+      }
+      
+      console.log('✅ Password reset email sent successfully')
+      return { data, error: null }
+    } catch (err) {
+      console.error('💥 Error sending password reset email:', err)
+      return { data: null, error: err }
+    }
   },
 
   updatePassword: async (newPassword: string) => {
     try {
+      console.log('🔐 Updating password...')
+      
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword
       })
@@ -579,34 +595,52 @@ export const listings = {
   
   addToFavorites: async (userId: string, listingId: string) => {
     try {
+      console.log('❤️ Adding listing to favorites:', listingId);
+      
       const { data, error } = await supabase
         .from('favorites')
         .insert([{ user_id: userId, listing_id: listingId }])
         .select()
       
-      return { data, error }
+      if (error) {
+        console.error('❌ Error adding to favorites:', error);
+        return { data: null, error };
+      }
+      
+      console.log('✅ Added to favorites successfully');
+      return { data, error: null };
     } catch (err) {
-      console.error('Error adding to favorites:', err)
-      return { data: null, error: err }
+      console.error('💥 Error adding to favorites:', err);
+      return { data: null, error: err };
     }
   },
   
   removeFromFavorites: async (userId: string, listingId: string) => {
     try {
+      console.log('💔 Removing listing from favorites:', listingId);
+      
       const { error } = await supabase
         .from('favorites')
         .delete()
         .match({ user_id: userId, listing_id: listingId })
       
-      return { error }
+      if (error) {
+        console.error('❌ Error removing from favorites:', error);
+        return { error };
+      }
+      
+      console.log('✅ Removed from favorites successfully');
+      return { error: null };
     } catch (err) {
-      console.error('Error removing from favorites:', err)
-      return { error: err }
+      console.error('💥 Error removing from favorites:', err);
+      return { error: err };
     }
   },
   
   getFavorites: async (userId: string) => {
     try {
+      console.log('🔍 Fetching favorites for user:', userId);
+      
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -615,15 +649,23 @@ export const listings = {
         `)
         .eq('user_id', userId)
       
-      return { data, error }
+      if (error) {
+        console.error('❌ Error fetching favorites:', error);
+        return { data: null, error };
+      }
+      
+      console.log('✅ Fetched favorites successfully:', data?.length || 0);
+      return { data, error: null };
     } catch (err) {
-      console.error('Error fetching favorites:', err)
-      return { data: null, error: err }
+      console.error('💥 Error fetching favorites:', err);
+      return { data: null, error: err };
     }
   },
 
   checkIfFavorite: async (userId: string, listingId: string) => {
     try {
+      console.log('🔍 Checking if listing is favorite:', listingId);
+      
       const { data, error } = await supabase
         .from('favorites')
         .select('*')
@@ -631,16 +673,17 @@ export const listings = {
         .eq('listing_id', listingId)
       
       if (error) {
-        console.error('Error checking if favorite:', error)
+        console.error('❌ Error checking if favorite:', error)
         return { isFavorite: false, error }
       }
       
       // Check if data array has any items (favorite exists)
       const isFavorite = data && data.length > 0
+      console.log('✅ Favorite check result:', isFavorite);
       
       return { isFavorite, error: null }
     } catch (err) {
-      console.error('Error checking if favorite:', err)
+      console.error('💥 Error checking if favorite:', err)
       return { isFavorite: false, error: err }
     }
   }

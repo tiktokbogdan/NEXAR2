@@ -26,6 +26,7 @@ const ProfilePage = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -117,6 +118,9 @@ const ProfilePage = () => {
     try {
       setIsLoadingFavorites(true);
       
+      console.log('🔍 Loading favorites for user profile:', userId);
+      
+      // Încărcăm favoritele utilizatorului cu join la listings
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -126,15 +130,19 @@ const ProfilePage = () => {
         .eq('user_id', userId);
       
       if (error) {
-        console.error('Error loading favorites:', error);
+        console.error('❌ Error loading favorites:', error);
         return;
       }
       
+      console.log('✅ Loaded favorites:', data?.length || 0);
+      
       // Extragem anunțurile din rezultate
       const favoriteListings = data?.map(item => item.listings) || [];
+      console.log('📋 Extracted listings:', favoriteListings);
+      
       setUserFavorites(favoriteListings);
     } catch (err) {
-      console.error('Error loading favorites:', err);
+      console.error('💥 Error loading favorites:', err);
     } finally {
       setIsLoadingFavorites(false);
     }
@@ -301,12 +309,13 @@ const ProfilePage = () => {
       
       if (error) {
         console.error('Error updating password:', error);
-        alert('Eroare la actualizarea parolei');
+        alert(`Eroare la actualizarea parolei: ${error.message}`);
         return;
       }
       
       // Resetăm starea
       setPasswordData({
+        currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
@@ -355,21 +364,25 @@ const ProfilePage = () => {
       
       if (!user) return;
       
+      console.log('🗑️ Removing favorite:', listingId);
+      
       const { error } = await supabase
         .from('favorites')
         .delete()
         .match({ user_id: user.id, listing_id: listingId });
       
       if (error) {
-        console.error('Error removing favorite:', error);
+        console.error('❌ Error removing favorite:', error);
         alert('Eroare la eliminarea din favorite');
         return;
       }
       
+      console.log('✅ Favorite removed successfully');
+      
       // Actualizăm lista de favorite
       setUserFavorites(prev => prev.filter(listing => listing.id !== listingId));
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      console.error('💥 Error removing favorite:', err);
       alert('A apărut o eroare la eliminarea din favorite');
     }
   };
@@ -741,6 +754,7 @@ const ProfilePage = () => {
                               onClick={() => {
                                 setIsChangingPassword(false);
                                 setPasswordData({
+                                  currentPassword: '',
                                   newPassword: '',
                                   confirmPassword: ''
                                 });

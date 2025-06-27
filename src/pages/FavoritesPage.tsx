@@ -26,21 +26,33 @@ const FavoritesPage = () => {
         return;
       }
       
-      // Încărcăm favoritele utilizatorului
-      const { data, error } = await listings.getFavorites(user.id);
+      console.log('🔍 Loading favorites for user:', user.id);
+      
+      // Încărcăm favoritele utilizatorului cu join la listings
+      const { data, error } = await supabase
+        .from('favorites')
+        .select(`
+          listing_id,
+          listings (*)
+        `)
+        .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error loading favorites:', error);
+        console.error('❌ Error loading favorites:', error);
         setError('Nu s-au putut încărca favoritele');
         return;
       }
       
+      console.log('✅ Loaded favorites:', data?.length || 0);
+      
       // Extragem anunțurile din rezultate
       const favoriteListings = data?.map(item => item.listings) || [];
+      console.log('📋 Extracted listings:', favoriteListings);
+      
       setFavorites(favoriteListings);
       
     } catch (err) {
-      console.error('Error loading favorites:', err);
+      console.error('💥 Error loading favorites:', err);
       setError('A apărut o eroare la încărcarea favoritelor');
     } finally {
       setIsLoading(false);
@@ -53,18 +65,25 @@ const FavoritesPage = () => {
       
       if (!user) return;
       
-      const { error } = await listings.removeFromFavorites(user.id, listingId);
+      console.log('🗑️ Removing favorite:', listingId);
+      
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .match({ user_id: user.id, listing_id: listingId });
       
       if (error) {
-        console.error('Error removing favorite:', error);
+        console.error('❌ Error removing favorite:', error);
         alert('Eroare la eliminarea din favorite');
         return;
       }
       
+      console.log('✅ Favorite removed successfully');
+      
       // Actualizăm lista de favorite
       setFavorites(prev => prev.filter(listing => listing.id !== listingId));
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      console.error('💥 Error removing favorite:', err);
       alert('A apărut o eroare la eliminarea din favorite');
     }
   };
