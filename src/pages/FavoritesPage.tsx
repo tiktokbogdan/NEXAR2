@@ -28,7 +28,7 @@ const FavoritesPage = () => {
       
       console.log('🔍 Loading favorites for user:', user.id);
       
-      // Încărcăm favoritele utilizatorului cu join la listings
+      // Încărcăm favoritele utilizatorului direct din tabela favorites
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -46,7 +46,7 @@ const FavoritesPage = () => {
       console.log('✅ Loaded favorites:', data?.length || 0);
       
       // Extragem anunțurile din rezultate
-      const favoriteListings = data?.map(item => item.listings) || [];
+      const favoriteListings = data?.map(item => item.listings).filter(Boolean) || [];
       console.log('📋 Extracted listings:', favoriteListings);
       
       setFavorites(favoriteListings);

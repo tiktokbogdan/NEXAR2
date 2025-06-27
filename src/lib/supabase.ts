@@ -15,6 +15,7 @@ export interface Listing {
   year: number
   mileage: number
   location: string
+  coordinates?: string // Adăugăm coordonatele pentru locația exactă
   category: string
   brand: string
   model: string

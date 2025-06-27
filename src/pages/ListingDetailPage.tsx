@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Star, Heart, Share2, MapPin, Calendar, Gauge, Fuel, 
-  Settings, Shield, Phone, Mail, MessageCircle, 
+  Settings, Shield, Phone, Mail, 
   ChevronLeft, ChevronRight, Check,
   Car, Zap, Cog, Palette, Award, User, ExternalLink, Building, AlertTriangle
 } from 'lucide-react';
@@ -12,7 +12,6 @@ const ListingDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showContactForm, setShowContactForm] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const [listing, setListing] = useState<any>(null);
@@ -20,6 +19,7 @@ const ListingDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [coordinates, setCoordinates] = useState<string | null>(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -65,6 +65,14 @@ const ListingDetailPage = () => {
         console.error('❌ Error loading seller profile:', sellerError);
       }
       
+      // Verificăm dacă există coordonate în anunț
+      if (data.coordinates) {
+        setCoordinates(data.coordinates);
+      } else {
+        // Folosim locația pentru a genera un URL de Google Maps
+        setCoordinates(null);
+      }
+      
       // Formatăm datele pentru afișare
       const formattedListing = {
         id: data.id,
@@ -73,7 +81,7 @@ const ListingDetailPage = () => {
         year: data.year,
         mileage: `${data.mileage.toLocaleString()} km`,
         location: data.location,
-        coordinates: "44.4268,26.1025", // Placeholder pentru coordonate
+        coordinates: data.coordinates || null,
         images: data.images && data.images.length > 0 
           ? data.images 
           : ["https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg"],
@@ -244,7 +252,16 @@ const ListingDetailPage = () => {
 
   const openGoogleMaps = () => {
     if (!listing) return;
-    const url = `https://www.google.com/maps/search/?api=1&query=${listing.coordinates}`;
+    
+    // Dacă avem coordonate exacte, le folosim
+    if (listing.coordinates) {
+      const url = `https://www.google.com/maps?q=${listing.coordinates}`;
+      window.open(url, '_blank');
+      return;
+    }
+    
+    // Altfel, folosim locația (orașul)
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.location + ", Romania")}`;
     window.open(url, '_blank');
   };
 
@@ -514,7 +531,7 @@ const ListingDetailPage = () => {
               {/* Description - Mobile Optimized */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center space-x-2">
-                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                  <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   <span>Descriere Detaliată</span>
                 </h3>
                 <div className="prose max-w-none text-gray-700 leading-relaxed text-sm sm:text-base">
@@ -573,20 +590,20 @@ const ListingDetailPage = () => {
               )}
 
               <div className="space-y-2 sm:space-y-3">
-                <button
-                  onClick={() => setShowContactForm(!showContactForm)}
-                  className="w-full bg-nexar-accent text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-nexar-gold transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-                >
-                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span>Trimite Mesaj</span>
-                </button>
-                
                 <a
                   href={`tel:${listing.seller.phone}`}
-                  className="w-full bg-gray-900 text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+                  className="w-full bg-nexar-accent text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-nexar-gold transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
                 >
                   <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Sună Acum</span>
+                </a>
+                
+                <a
+                  href={`mailto:${listing.seller.email}?subject=Interesat de ${listing.title}&body=Bună ziua, sunt interesat de anunțul dumneavoastră "${listing.title}" de pe Nexar.ro. Aș dori mai multe informații. Mulțumesc!`}
+                  className="w-full bg-gray-900 text-white py-2.5 sm:py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+                >
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>Trimite Email</span>
                 </a>
                 
                 <button
@@ -597,49 +614,6 @@ const ListingDetailPage = () => {
                   <span>Vezi pe Hartă</span>
                 </button>
               </div>
-
-              {showContactForm && (
-                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 animate-slide-up">
-                  <form className="space-y-3 sm:space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Numele tău
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent text-sm"
-                        placeholder="Introdu numele tău"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent text-sm"
-                        placeholder="email@exemplu.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Mesaj
-                      </label>
-                      <textarea
-                        rows={3}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-nexar-accent focus:border-transparent text-sm"
-                        placeholder="Sunt interesat de această motocicletă..."
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-nexar-accent text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-nexar-gold transition-colors text-sm"
-                    >
-                      Trimite Mesaj
-                    </button>
-                  </form>
-                </div>
-              )}
             </div>
           </div>
         </div>
